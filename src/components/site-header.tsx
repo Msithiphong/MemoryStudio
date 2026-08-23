@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { PlaceholderBox } from "@/components/placeholder-box";
 
 const NAV_LINKS = [
   { href: "/how-it-works", label: "How It Works" },
@@ -18,10 +19,10 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
-          Memory Studio
+    <header className="sticky top-0 z-40 border-b border-gold-300 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+      <div className="mx-auto flex max-w-[1180px] items-center gap-[17.6px] px-[clamp(20px,5vw,72px)] py-4 sm:py-[22px]">
+        <Link href="/" className="mr-auto">
+          <PlaceholderBox label="Logo (SVG/PNG)" className="h-16 w-24 sm:h-[104px] sm:w-[150px]" />
         </Link>
 
         <nav aria-label="Primary" className="hidden items-center gap-6 md:flex">
@@ -29,7 +30,7 @@ export function SiteHeader() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="text-[11.5px] tracking-[0.1em] text-foreground uppercase transition-colors hover:text-gold-600"
             >
               {link.label}
             </Link>
@@ -37,7 +38,9 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden md:block">
-          <Button render={<Link href="/inquiry" />}>Start Your Inquiry</Button>
+          <Button variant="brand" size="brand" render={<Link href="/inquiry" />}>
+            Start Your Inquiry
+          </Button>
         </div>
 
         <button
@@ -56,19 +59,21 @@ export function SiteHeader() {
         <nav
           id="mobile-nav"
           aria-label="Primary"
-          className="flex flex-col gap-1 border-t border-border px-4 py-3 md:hidden"
+          className="mx-auto flex max-w-[1180px] flex-col gap-1 border-t border-gold-300 px-[clamp(20px,5vw,72px)] py-3 md:hidden"
         >
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-lg px-2 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="rounded-lg px-2 py-2 text-[11.5px] tracking-[0.1em] text-foreground uppercase hover:bg-muted hover:text-gold-600"
               onClick={() => setOpen(false)}
             >
               {link.label}
             </Link>
           ))}
           <Button
+            variant="brand"
+            size="brand"
             render={<Link href="/inquiry" onClick={() => setOpen(false)} />}
             className="mt-2 w-full"
           >
