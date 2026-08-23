@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Memory Studio — Home (design reference 2a)</title>
+<link rel="stylesheet" href="./organic-styles.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Pinyon+Script&display=swap">
+<style>
+/* Memory Studio brand tokens — these OVERRIDE the Organic defaults in organic-styles.css */
+:root{
+--color-bg:#F6F0E7;--color-surface:#FBF7F1;--color-text:#2C211B;
+--color-accent:#A9824F;--color-accent-2:#7C8570;
+--color-divider:color-mix(in srgb,#A9824F 32%,transparent);
+--ms-champagne:#D8C3A5;--ms-taupe:#B7A796;--ms-espresso:#2C211B;--ms-ivory:#F6F0E7;
+--color-neutral-100:#FBF7F1;--color-neutral-200:#F1E9DE;--color-neutral-300:#E3D8C8;
+--color-neutral-400:#CFC0AD;--color-neutral-500:#B7A796;--color-neutral-600:#97887A;
+--color-neutral-700:#6E6154;--color-neutral-800:#4A3F35;--color-neutral-900:#2C211B;
+--color-accent-100:#F8F1E5;--color-accent-200:#EFE1C9;--color-accent-300:#E2CDA9;
+--color-accent-400:#D8C3A5;--color-accent-500:#C4A377;--color-accent-600:#A9824F;
+--color-accent-700:#8A6839;--color-accent-800:#5F4726;--color-accent-900:#3A2C18;
+--color-accent-2-100:#F0F2EC;--color-accent-2-200:#E0E4DA;--color-accent-2-300:#C9CFC0;
+--color-accent-2-400:#A8B29C;--color-accent-2-500:#7C8570;--color-accent-2-600:#67705C;
+--color-accent-2-700:#4F5747;--color-accent-2-800:#383E32;--color-accent-2-900:#23271F;
+--font-heading:"Cormorant Garamond",Georgia,serif;--font-heading-weight:400;
+--ms-script:"Pinyon Script",cursive;
+--shadow-sm:0 1px 2px color-mix(in srgb,#2C211B 10%,transparent);
+--shadow-md:0 4px 16px color-mix(in srgb,#2C211B 12%,transparent);
+--shadow-lg:0 16px 48px color-mix(in srgb,#2C211B 18%,transparent);
+}
+/* the brand's button: champagne fill, espresso letterspaced caps */
+.btn{letter-spacing:.14em;text-transform:uppercase;font-size:11.5px;font-family:var(--font-body);font-weight:600;padding:13px 24px;border-radius:var(--radius-sm)}
+.btn-primary{background:var(--ms-champagne);color:var(--ms-espresso)}
+.btn-primary:hover{background:var(--color-accent-500)}
+.btn-primary:active{background:var(--color-accent-600);color:var(--ms-ivory)}
+.btn-ghost{color:var(--color-accent-700)}
+.nav a{letter-spacing:.1em;text-transform:uppercase;font-size:11.5px}
+body{margin:0;background:var(--color-bg);font-family:var(--font-body)}
+a{color:var(--color-accent-700);text-decoration:none}a:hover{color:var(--color-accent-800)}
+.page{width:1180px;margin:0 auto;background:var(--color-bg)}
+/* image placeholders — replace with real <img> in the implementation */
+.ph{display:grid;place-content:center;text-align:center;gap:4px;background:var(--color-neutral-300);
+  border:1px dashed var(--color-accent-600);color:var(--color-accent-800);
+  font:600 11px/1.5 var(--font-body);letter-spacing:.1em;text-transform:uppercase;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="page">
+<div style="border-bottom:1px solid var(--color-accent-300)">
+<nav class="nav" style="padding:22px 72px">
+<span class="nav-brand" style="display:flex;align-items:center;gap:16px;margin-right:auto">
+<div class="ph" style="width:150px;height:104px">Logo<br>(SVG/PNG)</div>
+</span>
+<a href="#2a">How It Works</a><a href="#2a">Packages</a><a href="#2a">Gallery</a><a href="#2a">FAQ</a><a href="#2a">About</a>
+<button type="button" class="btn btn-primary">Start Your Inquiry</button>
+</nav>
+</div>
+
+<div style="text-align:center;padding:76px 72px 0">
+<p style="font-size:11.5px;letter-spacing:.34em;text-transform:uppercase;color:var(--color-accent-700);margin:0">Timeless &nbsp;•&nbsp; Romantic &nbsp;•&nbsp; Unforgettable</p>
+<h1 style="font-size:62px;line-height:1.14;font-weight:300;margin:26px auto 0;max-width:19ch;letter-spacing:-.005em">A video and audio guest book your future selves will <span style="font-family:var(--ms-script);font-size:74px;line-height:.9;color:var(--color-accent-700)">treasure</span></h1>
+<p style="font-size:17px;line-height:1.75;max-width:56ch;margin:28px auto 0;color:color-mix(in srgb,var(--color-text) 76%,transparent)">Memory Studio brings a private recording booth to your wedding, so every guest can leave a message you’ll actually watch again.</p>
+<div style="display:flex;gap:14px;justify-content:center;margin-top:34px">
+<button type="button" class="btn btn-primary">Start Your Inquiry</button>
+<button type="button" class="btn btn-secondary">See How It Works</button>
+</div>
+<p style="font-size:13px;line-height:1.7;margin:22px auto 0;max-width:52ch;color:color-mix(in srgb,var(--color-text) 58%,transparent)">Submitting an inquiry doesn’t reserve your date — every request is reviewed before booking.</p>
+</div>
+
+<div style="position:relative;margin-top:64px;padding:0 72px;display:flex;gap:56px;align-items:center;justify-content:center">
+<div style="position:absolute;left:50%;top:120px;transform:translateX(-50%);width:640px;height:640px;border-radius:50%;background:var(--color-accent-2-100)"></div>
+<div class="washed" style="position:relative;width:560px;flex:none;border-radius:280px 280px 20px 20px;overflow:hidden;box-shadow:var(--shadow-lg)">
+<div class="ph" style="width:100%;height:700px">Booth photograph<br>arched panel, florals, candlelight</div>
+</div>
+<p style="position:relative;font-family:var(--ms-script);font-size:34px;line-height:1.4;margin:0;max-width:16ch;color:var(--color-accent-700)">Capturing the voices, laughs and love you’ll want to relive forever.</p>
+</div>
+
+<div style="padding:88px 72px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:48px;text-align:center">
+<div>
+<div style="width:100%;height:1px;background:var(--color-accent-400);margin-bottom:28px"></div>
+<h3 style="font-size:15px;letter-spacing:.16em;text-transform:uppercase;font-family:var(--font-body);font-weight:600;margin:0">One booth, your day only</h3>
+<p style="font-size:15px;line-height:1.8;margin:16px 0 0;color:color-mix(in srgb,var(--color-text) 76%,transparent)">We take a single event per date, so your guest book gets our full attention from setup to delivery.</p>
+</div>
+<div>
+<div style="width:100%;height:1px;background:var(--color-accent-400);margin-bottom:28px"></div>
+<h3 style="font-size:15px;letter-spacing:.16em;text-transform:uppercase;font-family:var(--font-body);font-weight:600;margin:0">Private by design</h3>
+<p style="font-size:15px;line-height:1.8;margin:16px 0 0;color:color-mix(in srgb,var(--color-text) 76%,transparent)">Your recordings are delivered through a secure, personal link. Nothing is public unless you choose to share it.</p>
+</div>
+<div>
+<div style="width:100%;height:1px;background:var(--color-accent-400);margin-bottom:28px"></div>
+<h3 style="font-size:15px;letter-spacing:.16em;text-transform:uppercase;font-family:var(--font-body);font-weight:600;margin:0">Made to keep</h3>
+<p style="font-size:15px;line-height:1.8;margin:16px 0 0;color:color-mix(in srgb,var(--color-text) 76%,transparent)">Every message is preserved as a lasting film you can revisit for anniversaries to come.</p>
+</div>
+</div>
+
+<div style="padding:96px 72px 0;text-align:center">
+<p style="font-size:11.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--color-accent-700);margin:0">What your guests leave behind</p>
+<h2 style="font-size:40px;font-weight:300;margin:20px auto 0;max-width:22ch">Guided prompts, so nobody freezes on camera</h2>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:48px;text-align:center">
+<div style="background:var(--color-surface);border:1px solid var(--color-accent-300);border-radius:20px;padding:40px 32px">
+<p style="font-family:var(--font-heading);font-size:26px;font-weight:400;line-height:1.35;margin:0">“How did you meet them?”</p>
+<div style="width:40px;height:1px;background:var(--color-accent-500);margin:24px auto"></div>
+<p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:0;color:color-mix(in srgb,var(--color-text) 60%,transparent)">Aunt Rosa &nbsp;•&nbsp; 0:48</p>
+</div>
+<div style="background:var(--color-accent-2-200);border:1px solid var(--color-accent-2-400);border-radius:20px;padding:40px 32px">
+<p style="font-family:var(--font-heading);font-size:26px;font-weight:400;line-height:1.35;margin:0">“What should they never forget?”</p>
+<div style="width:40px;height:1px;background:var(--color-accent-2-600);margin:24px auto"></div>
+<p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:0;color:color-mix(in srgb,var(--color-text) 62%,transparent)">Danny &amp; Kim &nbsp;•&nbsp; 1:12</p>
+</div>
+<div style="background:var(--color-accent-200);border:1px solid var(--color-accent-400);border-radius:20px;padding:40px 32px">
+<p style="font-family:var(--font-heading);font-size:26px;font-weight:400;line-height:1.35;margin:0">“Give them one piece of advice.”</p>
+<div style="width:40px;height:1px;background:var(--color-accent-600);margin:24px auto"></div>
+<p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:0;color:color-mix(in srgb,var(--color-text) 62%,transparent)">Grandpa Vic &nbsp;•&nbsp; 0:33</p>
+</div>
+</div>
+</div>
+
+<div style="margin-top:96px;background:var(--color-neutral-200);padding:80px 72px">
+<div style="text-align:center">
+<p style="font-size:11.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--color-accent-700);margin:0">The booth</p>
+<h2 style="font-size:40px;font-weight:300;margin:20px 0 0">Every detail, made to look like it belongs</h2>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:44px 56px;margin-top:56px">
+<div><h3 style="font-size:22px;font-weight:400;margin:0">Brass picture light</h3><p style="font-size:14.5px;line-height:1.75;margin:10px 0 0;color:color-mix(in srgb,var(--color-text) 74%,transparent)">A warm gallery light over the arch, so faces read beautifully after dark.</p></div>
+<div><h3 style="font-size:22px;font-weight:400;margin:0">Arched interior molding</h3><p style="font-size:14.5px;line-height:1.75;margin:10px 0 0;color:color-mix(in srgb,var(--color-text) 74%,transparent)">Hand-finished molding with a soft LED glow that draws guests in.</p></div>
+<div><h3 style="font-size:22px;font-weight:400;margin:0">Custom lettering</h3><p style="font-size:14.5px;line-height:1.75;margin:10px 0 0;color:color-mix(in srgb,var(--color-text) 74%,transparent)">Your names and date, set in the booth’s own hand. Optional.</p></div>
+<div><h3 style="font-size:22px;font-weight:400;margin:0">Framed iPad</h3><p style="font-size:14.5px;line-height:1.75;margin:10px 0 0;color:color-mix(in srgb,var(--color-text) 74%,transparent)">The screen sits in a gilt frame, so it reads as a piece of art, not a kiosk.</p></div>
+<div><h3 style="font-size:22px;font-weight:400;margin:0">Antique brass microphone</h3><p style="font-size:14.5px;line-height:1.75;margin:10px 0 0;color:color-mix(in srgb,var(--color-text) 74%,transparent)">On a braided cord — guests pick it up and know exactly what to do.</p></div>
+<div><h3 style="font-size:22px;font-weight:400;margin:0">Floral styling</h3><p style="font-size:14.5px;line-height:1.75;margin:10px 0 0;color:color-mix(in srgb,var(--color-text) 74%,transparent)">Blooms and greenery matched to your palette. Available as an add-on.</p></div>
+</div>
+</div>
+
+<div style="padding:96px 72px 0;text-align:center">
+<h2 style="font-size:40px;font-weight:300;margin:0">Packages</h2>
+<p style="font-size:15.5px;line-height:1.75;margin:14px auto 0;max-width:48ch;color:color-mix(in srgb,var(--color-text) 76%,transparent)">Three starting points — every booking is customized after inquiry.</p>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:44px;text-align:center">
+<div style="background:var(--color-surface);border:1px solid var(--color-accent-300);border-radius:160px 160px 12px 12px;padding:56px 32px 40px">
+<h3 style="font-size:14px;letter-spacing:.2em;text-transform:uppercase;font-family:var(--font-body);font-weight:600;margin:0">Cocktail</h3>
+<p style="font-family:var(--font-heading);font-size:46px;font-weight:300;margin:18px 0 0">$499</p>
+<p style="font-size:14.5px;line-height:1.75;margin:18px 0 0;color:color-mix(in srgb,var(--color-text) 74%,transparent)">A focused guest book for intimate celebrations.</p>
+</div>
+<div style="background:var(--ms-champagne);border:1px solid var(--color-accent-600);border-radius:160px 160px 12px 12px;padding:56px 32px 40px;box-shadow:var(--shadow-md)">
+<h3 style="font-size:14px;letter-spacing:.2em;text-transform:uppercase;font-family:var(--font-body);font-weight:600;margin:0">Signature</h3>
+<p style="font-family:var(--font-heading);font-size:46px;font-weight:300;margin:18px 0 0">$699</p>
+<p style="font-size:14.5px;line-height:1.75;margin:18px 0 0;color:color-mix(in srgb,var(--color-text) 80%,transparent)">Our most popular package, with more prompts and time.</p>
+</div>
+<div style="background:var(--color-surface);border:1px solid var(--color-accent-300);border-radius:160px 160px 12px 12px;padding:56px 32px 40px">
+<h3 style="font-size:14px;letter-spacing:.2em;text-transform:uppercase;font-family:var(--font-body);font-weight:600;margin:0">Keepsake</h3>
+<p style="font-family:var(--font-heading);font-size:46px;font-weight:300;margin:18px 0 0">$949</p>
+<p style="font-size:14.5px;line-height:1.75;margin:18px 0 0;color:color-mix(in srgb,var(--color-text) 74%,transparent)">The full experience, built for weddings you’ll replay for years.</p>
+</div>
+</div>
+<div style="margin-top:36px"><button type="button" class="btn btn-secondary">Compare packages</button></div>
+</div>
+
+<div style="margin-top:96px;background:var(--ms-espresso);padding:88px 72px;text-align:center">
+<p style="font-size:11.5px;letter-spacing:.34em;text-transform:uppercase;color:var(--color-accent-400);margin:0">Timeless &nbsp;•&nbsp; Romantic &nbsp;•&nbsp; Unforgettable</p>
+<h2 style="font-size:42px;font-weight:300;margin:24px auto 0;max-width:24ch;color:var(--ms-ivory)">Ready to tell us about your day?</h2>
+<p style="font-size:16px;line-height:1.75;margin:18px auto 0;max-width:48ch;color:color-mix(in srgb,#F6F0E7 74%,transparent)">Share your date and venue, and we’ll follow up to confirm availability.</p>
+<div style="margin-top:32px"><button type="button" class="btn btn-primary">Start Your Inquiry</button></div>
+</div>
+
+<div style="padding:56px 72px 44px;display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;font-size:13.5px;line-height:1.8;color:color-mix(in srgb,var(--color-text) 66%,transparent)">
+<div style="max-width:36ch">
+<p style="font-weight:600;letter-spacing:.3em;text-transform:uppercase;font-size:11.5px;color:var(--color-text);margin:0 0 12px">Memory Studio</p>
+<p style="margin:0">A private video and audio guest book for your wedding day, delivered securely after the celebration.</p>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px 28px;align-items:flex-start;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase">
+<a href="#2a">How It Works</a><a href="#2a">Packages</a><a href="#2a">Gallery</a><a href="#2a">FAQ</a><a href="#2a">About</a><a href="#2a">Start Your Inquiry</a>
+</div>
+</div>
+<div style="padding:0 72px 40px;font-size:12px;color:color-mix(in srgb,var(--color-text) 52%,transparent)">© 2026 Memory Studio. All rights reserved.</div>
+</div>
+</body>
+</html>
