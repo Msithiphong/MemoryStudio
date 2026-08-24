@@ -1,0 +1,38 @@
+export type Package = {
+  id: "cocktail" | "signature" | "keepsake";
+  name: string;
+  priceCents: number;
+  blurb: string;
+  featured?: boolean;
+};
+
+export const PACKAGES: Package[] = [
+  {
+    id: "cocktail",
+    name: "Cocktail",
+    priceCents: 49_900,
+    blurb: "A focused guest book for intimate celebrations.",
+  },
+  {
+    id: "signature",
+    name: "Signature",
+    priceCents: 69_900,
+    blurb: "Our most popular package, with more prompts and time.",
+    featured: true,
+  },
+  {
+    id: "keepsake",
+    name: "Keepsake",
+    priceCents: 94_900,
+    blurb: "The full experience, built for weddings you'll replay for years.",
+  },
+];
+
+export function formatPrice(cents: number): string {
+  return (cents / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}

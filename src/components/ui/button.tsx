@@ -18,6 +18,10 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        brand:
+          "bg-gold-400 text-espresso-900 hover:bg-gold-500 active:bg-gold-600 active:text-background",
+        "brand-outline":
+          "border-border text-espresso-900 hover:bg-espresso-900/7 active:bg-espresso-900/14",
       },
       size: {
         default:
@@ -31,6 +35,8 @@ const buttonVariants = cva(
         "icon-sm":
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
+        brand:
+          "h-auto gap-1.5 rounded-[8px] px-6 py-[13px] text-[11.5px] font-semibold tracking-[0.14em] uppercase",
       },
     },
     defaultVariants: {
@@ -44,11 +50,13 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  nativeButton,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
+      nativeButton={nativeButton ?? !props.render}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

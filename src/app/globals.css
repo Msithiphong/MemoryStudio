@@ -5,8 +5,39 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
+    --font-heading: var(--font-heading);
+    --font-script: var(--font-script);
+    --color-espresso-100: var(--espresso-100);
+    --color-espresso-200: var(--espresso-200);
+    --color-espresso-300: var(--espresso-300);
+    --color-espresso-400: var(--espresso-400);
+    --color-espresso-500: var(--espresso-500);
+    --color-espresso-600: var(--espresso-600);
+    --color-espresso-700: var(--espresso-700);
+    --color-espresso-800: var(--espresso-800);
+    --color-espresso-900: var(--espresso-900);
+    --color-gold-100: var(--gold-100);
+    --color-gold-200: var(--gold-200);
+    --color-gold-300: var(--gold-300);
+    --color-gold-400: var(--gold-400);
+    --color-gold-500: var(--gold-500);
+    --color-gold-600: var(--gold-600);
+    --color-gold-700: var(--gold-700);
+    --color-gold-800: var(--gold-800);
+    --color-gold-900: var(--gold-900);
+    --color-sage-100: var(--sage-100);
+    --color-sage-200: var(--sage-200);
+    --color-sage-300: var(--sage-300);
+    --color-sage-400: var(--sage-400);
+    --color-sage-500: var(--sage-500);
+    --color-sage-600: var(--sage-600);
+    --color-sage-700: var(--sage-700);
+    --color-sage-800: var(--sage-800);
+    --color-sage-900: var(--sage-900);
+    --shadow-sm: var(--shadow-sm);
+    --shadow-md: var(--shadow-md);
+    --shadow-lg: var(--shadow-lg);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,30 +79,31 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    /* Memory Studio brand — Warm Ivory / Champagne / Deep Espresso */
+    --background: #F6F0E7;
+    --foreground: #2C211B;
+    --card: #FBF7F1;
+    --card-foreground: #2C211B;
+    --popover: #FBF7F1;
+    --popover-foreground: #2C211B;
+    --primary: #D8C3A5;
+    --primary-foreground: #2C211B;
+    --secondary: #F1E9DE;
+    --secondary-foreground: #2C211B;
+    --muted: #F1E9DE;
+    --muted-foreground: #2C211B;
+    --accent: #A9824F;
+    --accent-foreground: #F6F0E7;
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: color-mix(in srgb, #A9824F 32%, transparent);
+    --input: color-mix(in srgb, #A9824F 32%, transparent);
+    --ring: #A9824F;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
+    --radius: 0.5rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.205 0 0);
@@ -80,6 +112,41 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+
+    /* Tonal ramps */
+    --espresso-100: #FBF7F1;
+    --espresso-200: #F1E9DE;
+    --espresso-300: #E3D8C8;
+    --espresso-400: #CFC0AD;
+    --espresso-500: #B7A796;
+    --espresso-600: #97887A;
+    --espresso-700: #6E6154;
+    --espresso-800: #4A3F35;
+    --espresso-900: #2C211B;
+
+    --gold-100: #F8F1E5;
+    --gold-200: #EFE1C9;
+    --gold-300: #E2CDA9;
+    --gold-400: #D8C3A5;
+    --gold-500: #C4A377;
+    --gold-600: #A9824F;
+    --gold-700: #8A6839;
+    --gold-800: #5F4726;
+    --gold-900: #3A2C18;
+
+    --sage-100: #F0F2EC;
+    --sage-200: #E0E4DA;
+    --sage-300: #C9CFC0;
+    --sage-400: #A8B29C;
+    --sage-500: #7C8570;
+    --sage-600: #67705C;
+    --sage-700: #4F5747;
+    --sage-800: #383E32;
+    --sage-900: #23271F;
+
+    --shadow-sm: 0 1px 2px rgba(44, 33, 27, .10);
+    --shadow-md: 0 4px 16px rgba(44, 33, 27, .12);
+    --shadow-lg: 0 16px 48px rgba(44, 33, 27, .18);
 }
 
 .dark {
@@ -126,4 +193,10 @@
   html {
     @apply font-sans;
     }
+}
+
+@layer utilities {
+  .washed-photo {
+    filter: saturate(.6) contrast(.85) brightness(1.1) opacity(.94);
+  }
 }
