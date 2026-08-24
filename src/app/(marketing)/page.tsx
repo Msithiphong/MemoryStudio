@@ -192,12 +192,13 @@ export default function Home() {
           </p>
           <div className="mt-11 grid grid-cols-1 gap-7 sm:grid-cols-3">
             {PACKAGES.map((pkg) => (
-              <div
+              <Link
                 key={pkg.id}
+                href="/packages"
                 className={
                   pkg.featured
-                    ? "rounded-[160px_160px_12px_12px] border border-gold-600 bg-primary px-8 pt-14 pb-10 shadow-md"
-                    : "rounded-[160px_160px_12px_12px] border border-gold-300 bg-card px-8 pt-14 pb-10"
+                    ? "rounded-[160px_160px_12px_12px] border border-gold-600 bg-primary px-8 pt-14 pb-10 shadow-md outline-none transition-shadow hover:shadow-lg focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                    : "rounded-[160px_160px_12px_12px] border border-gold-300 bg-card px-8 pt-14 pb-10 outline-none transition-shadow hover:shadow-lg focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 }
               >
                 <h3 className="font-sans text-sm font-semibold tracking-[0.2em] uppercase">{pkg.name}</h3>
@@ -211,7 +212,7 @@ export default function Home() {
                 >
                   {pkg.blurb}
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
           <div className="mt-9">
