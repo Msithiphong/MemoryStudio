@@ -59,7 +59,7 @@ export default function HowItWorksPage() {
 
       <div className="mt-16 flex flex-col items-start gap-3 rounded-xl border border-border bg-muted/30 p-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">Ready to check availability for your date?</p>
-        <Button render={<Link href="/inquiry" />}>Start Your Inquiry</Button>
+        <Button render={<Link href="/inquiry" />}>Check your Dates</Button>
       </div>
     </div>
   );

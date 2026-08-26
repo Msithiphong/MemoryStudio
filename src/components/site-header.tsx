@@ -47,7 +47,7 @@ export function SiteHeader() {
 
         <div className="hidden md:block">
           <Button variant="brand" size="brand" render={<Link href="/inquiry" />}>
-            Start Your Inquiry
+            Check your Dates
           </Button>
         </div>
 
@@ -85,7 +85,7 @@ export function SiteHeader() {
             render={<Link href="/inquiry" onClick={() => setOpen(false)} />}
             className="mt-2 w-full"
           >
-            Start Your Inquiry
+            Check your Dates
           </Button>
         </nav>
       ) : null}

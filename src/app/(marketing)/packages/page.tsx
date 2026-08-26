@@ -7,21 +7,21 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 export const metadata: Metadata = {
   title: "Packages",
-  description: "Compare Memory Studio's Cocktail, Signature, and Keepsake wedding guest book packages.",
+  description: "Compare Memory Studio's Moment, Signature, and Keepsake wedding guest book packages.",
 };
 
 const PACKAGES = [
   {
-    name: "Cocktail",
+    name: "Moment",
     price: "$499",
     blurb: "A focused guest book for intimate celebrations.",
-    features: ["Recording booth for your event", "About 3 guided prompts", "Private digital gallery"],
+    features: ["2 Hours of Recording", "Unlimited Guest Messages", "Private Digital Gallery"],
   },
   {
     name: "Signature",
     price: "$699",
     blurb: "Our most requested package, with more time and prompts.",
-    features: ["Recording booth for your event", "About 5 guided prompts", "Private digital gallery", "Extended rental hours available"],
+    features: ["4 Hours of Recording", "Unlimited Guest Messages", "Private Digital Gallery", "Personalized Video Prompts", "Custom Welcome Screen"],
     featured: true,
   },
   {
@@ -29,10 +29,11 @@ const PACKAGES = [
     price: "$949",
     blurb: "The full experience, built for weddings you'll replay for years.",
     features: [
-      "Recording booth for your event",
-      "Full Signature-level customization",
-      "Private digital gallery",
-      "Priority scheduling",
+      "6 Hours of Recording",
+      "Unlimited Guest Messages",
+      "Personalized Video Prompts",
+      "Custom Welcome Screen",
+      "Premium Booth Styling"
     ],
   },
 ];
@@ -40,13 +41,13 @@ const PACKAGES = [
 const ADD_ONS = [
   { name: "Additional rental hour", price: "$100" },
   { name: "Edited keepsake film", price: "Starting at $200" },
-  { name: "Booth attendant", price: "Starting at $75/hour" },
+  { name: "Same Week Booking", price: "$75" },
   { name: "Premium backdrop", price: "Starting at $150" },
   { name: "Custom signage", price: "Starting at $75" },
-  { name: "Animated welcome screen", price: "Starting at $75" },
-  { name: "Rush delivery", price: "Starting at $150" },
+  { name: "Custom USB keepsake", price: "$50" },
+  { name: "Rush Video delivery", price: "Starting at $70" },
   { name: "Extended cloud archive", price: "Starting at $50" },
-  { name: "Anniversary video edit", price: "Starting at $150" },
+  { name: "Premium Floral Styling", price: "Starting at $125" },
 ];
 
 export default function PackagesPage() {
@@ -99,6 +100,10 @@ export default function PackagesPage() {
             </div>
           ))}
         </div>
+        <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">Looking for something extra?</span> Additional
+          Enhancements, Custom Styling, and Extended Travel are available upon request.
+        </p>
       </section>
     </div>
   );

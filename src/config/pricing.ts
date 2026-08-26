@@ -1,5 +1,5 @@
 export type Package = {
-  id: "cocktail" | "signature" | "keepsake";
+  id: "moment" | "signature" | "keepsake";
   name: string;
   priceCents: number;
   blurb: string;
@@ -8,8 +8,8 @@ export type Package = {
 
 export const PACKAGES: Package[] = [
   {
-    id: "cocktail",
-    name: "Cocktail",
+    id: "moment",
+    name: "Moment",
     priceCents: 49_900,
     blurb: "A focused guest book for intimate celebrations.",
   },

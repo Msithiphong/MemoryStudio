@@ -95,12 +95,12 @@ export default function Home() {
             </span>
           </h1>
           <p className="mx-auto mt-7 max-w-[56ch] text-[17px] leading-[1.75] text-foreground/76">
-            Memory Studio brings a private recording booth to your wedding, so every guest can leave a message
-            you&apos;ll actually watch again.
+            Memory Studio brings a private video guestbook to your wedding, where the people you love leave stories,
+            advice, laughter, and messages you&apos;ll replay for years.
           </p>
           <div className="mt-[34px] flex flex-col items-center justify-center gap-3.5 sm:flex-row">
             <Button variant="brand" size="brand" render={<Link href="/inquiry" />}>
-              Start Your Inquiry
+              Check your Dates
             </Button>
             <Button variant="brand-outline" size="brand" render={<Link href="/how-it-works" />}>
               See How It Works
@@ -197,10 +197,15 @@ export default function Home() {
                 href="/packages"
                 className={
                   pkg.featured
-                    ? "rounded-[160px_160px_12px_12px] border border-gold-600 bg-primary px-8 pt-14 pb-10 shadow-md outline-none transition-shadow hover:shadow-lg focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                    ? "relative rounded-[160px_160px_12px_12px] border border-gold-600 bg-primary px-8 pt-14 pb-10 shadow-md outline-none transition-shadow hover:shadow-lg focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                     : "rounded-[160px_160px_12px_12px] border border-gold-300 bg-card px-8 pt-14 pb-10 outline-none transition-shadow hover:shadow-lg focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 }
               >
+                {pkg.featured ? (
+                  <span className="absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-accent px-4 py-1.5 text-[10px] font-semibold tracking-[0.18em] text-accent-foreground uppercase shadow-sm">
+                    Most Popular
+                  </span>
+                ) : null}
                 <h3 className="font-sans text-sm font-semibold tracking-[0.2em] uppercase">{pkg.name}</h3>
                 <p className="mt-4.5 font-heading text-[46px] font-light">{formatPrice(pkg.priceCents)}</p>
                 <p
@@ -228,14 +233,14 @@ export default function Home() {
         <div className={`${CONTAINER} ${GUTTER}`}>
           <p className="text-[11.5px] tracking-[0.34em] text-gold-400 uppercase">{EYEBROW}</p>
           <h2 className="font-heading mx-auto mt-6 max-w-[24ch] text-[42px] font-light text-background">
-            Ready to tell us about your day?
+            Let's preserve the people who make your day unforgettable.
           </h2>
           <p className="mx-auto mt-4.5 max-w-[48ch] text-base leading-[1.75] text-background/74">
             Share your date and venue, and we&apos;ll follow up to confirm availability.
           </p>
           <div className="mt-8">
             <Button variant="brand" size="brand" render={<Link href="/inquiry" />}>
-              Start Your Inquiry
+              Check your Dates
             </Button>
           </div>
         </div>
