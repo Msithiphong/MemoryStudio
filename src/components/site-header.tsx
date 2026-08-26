@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { PlaceholderBox } from "@/components/placeholder-box";
 
 const NAV_LINKS = [
   { href: "/how-it-works", label: "How It Works" },
@@ -22,7 +22,15 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-gold-300 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
       <div className="mx-auto flex max-w-[1180px] items-center gap-[17.6px] px-[clamp(20px,5vw,72px)] py-4 sm:py-[22px]">
         <Link href="/" className="mr-auto">
-          <PlaceholderBox label="Logo (SVG/PNG)" className="h-16 w-24 sm:h-[104px] sm:w-[150px]" />
+          <Image
+            src="/assets/logos/Logo.png"
+            alt="Memory Studio"
+            width={104}
+            height={104}
+            priority
+            unoptimized
+            className="h-16 w-16 sm:h-[104px] sm:w-[104px]"
+          />
         </Link>
 
         <nav aria-label="Primary" className="hidden items-center gap-6 md:flex">
