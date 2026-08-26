@@ -65,7 +65,7 @@ const BOOTH_DETAILS = [
     description: "Your names and date, set in the booth's own hand. Optional.",
   },
   {
-    title: "Framed iPad",
+    title: "Screen",
     description: "The screen sits in a gilt frame, so it reads as a piece of art, not a kiosk.",
   },
   {

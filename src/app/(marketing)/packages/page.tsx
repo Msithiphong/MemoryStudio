@@ -42,7 +42,6 @@ const ADD_ONS = [
   { name: "Additional rental hour", price: "$100" },
   { name: "Edited keepsake film", price: "Starting at $200" },
   { name: "Same Week Booking", price: "$75" },
-  { name: "Premium backdrop", price: "Starting at $150" },
   { name: "Custom signage", price: "Starting at $75" },
   { name: "Custom USB keepsake", price: "$50" },
   { name: "Rush Video delivery", price: "Starting at $70" },
