@@ -4,6 +4,9 @@ import { Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatPrice } from "@/config/pricing";
+
+const FOUNDERS_DISCOUNT_CENTS = 10_000;
 
 export const metadata: Metadata = {
   title: "Packages",
@@ -13,20 +16,20 @@ export const metadata: Metadata = {
 const PACKAGES = [
   {
     name: "Moment",
-    price: "$499",
+    priceCents: 49_900,
     blurb: "A focused guest book for intimate celebrations.",
     features: ["2 Hours of Recording", "Unlimited Guest Messages", "Private Digital Gallery"],
   },
   {
     name: "Signature",
-    price: "$699",
+    priceCents: 69_900,
     blurb: "Our most requested package, with more time and prompts.",
     features: ["4 Hours of Recording", "Unlimited Guest Messages", "Private Digital Gallery", "Personalized Video Prompts", "Custom Welcome Screen"],
     featured: true,
   },
   {
     name: "Keepsake",
-    price: "$949",
+    priceCents: 94_900,
     blurb: "The full experience, built for weddings you'll replay for years.",
     features: [
       "6 Hours of Recording",
@@ -57,6 +60,11 @@ export default function PackagesPage() {
         Every package includes our booth, setup, and a private gallery for delivery. Final pricing and add-ons are
         confirmed together after your inquiry is reviewed.
       </p>
+      <p className="mt-4 max-w-2xl text-muted-foreground">
+        As one of our founding clients, take $100 off any package below. In exchange, you&apos;re giving Memory
+        Studio consent to feature select photos, video, and guest moments from your event in our promotional
+        content.
+      </p>
 
       <div className="mt-12 grid gap-6 sm:grid-cols-3">
         {PACKAGES.map((pkg) => (
@@ -69,7 +77,17 @@ export default function PackagesPage() {
               <CardDescription>{pkg.blurb}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 space-y-4">
-              <p className="text-3xl font-semibold">{pkg.price}</p>
+              <div className="space-y-1">
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-semibold">
+                    {formatPrice(pkg.priceCents - FOUNDERS_DISCOUNT_CENTS)}
+                  </p>
+                  <p className="text-lg text-muted-foreground line-through">{formatPrice(pkg.priceCents)}</p>
+                </div>
+                <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  Founders Price
+                </span>
+              </div>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 {pkg.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
