@@ -4,9 +4,7 @@ import { Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatPrice } from "@/config/pricing";
-
-const FOUNDERS_DISCOUNT_CENTS = 10_000;
+import { formatPrice, getFoundersPriceCents } from "@/config/pricing";
 
 export const metadata: Metadata = {
   title: "Packages",
@@ -80,7 +78,7 @@ export default function PackagesPage() {
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
                   <p className="text-3xl font-semibold">
-                    {formatPrice(pkg.priceCents - FOUNDERS_DISCOUNT_CENTS)}
+                    {formatPrice(getFoundersPriceCents(pkg.priceCents))}
                   </p>
                   <p className="text-lg text-muted-foreground line-through">{formatPrice(pkg.priceCents)}</p>
                 </div>

@@ -36,3 +36,9 @@ export function formatPrice(cents: number): string {
     maximumFractionDigits: 0,
   });
 }
+
+export const FOUNDERS_DISCOUNT_CENTS = 10_000;
+
+export function getFoundersPriceCents(priceCents: number): number {
+  return priceCents - FOUNDERS_DISCOUNT_CENTS;
+}
