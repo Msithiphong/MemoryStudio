@@ -233,7 +233,7 @@ export default function Home() {
         <div className={`${CONTAINER} ${GUTTER}`}>
           <p className="text-[11.5px] tracking-[0.34em] text-gold-400 uppercase">{EYEBROW}</p>
           <h2 className="font-heading mx-auto mt-6 max-w-[24ch] text-[42px] font-light text-background">
-            Let's preserve the people who make your day unforgettable.
+            Let&apos;s preserve the people who make your day unforgettable.
           </h2>
           <p className="mx-auto mt-4.5 max-w-[48ch] text-base leading-[1.75] text-background/74">
             Share your date and venue, and we&apos;ll follow up to confirm availability.

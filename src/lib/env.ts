@@ -30,8 +30,16 @@ export const publicEnvSchema = z.object({
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 export type PublicEnv = z.infer<typeof publicEnvSchema>;
 
+function stripEmptyStrings(values: Record<string, string | undefined>): Record<string, string | undefined> {
+  const result: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(values)) {
+    result[key] = value === "" ? undefined : value;
+  }
+  return result;
+}
+
 export function parseOrThrow<T extends z.ZodTypeAny>(schema: T, values: Record<string, string | undefined>, label: string): z.infer<T> {
-  const result = schema.safeParse(values);
+  const result = schema.safeParse(stripEmptyStrings(values));
   if (!result.success) {
     throw new Error(`Invalid ${label} environment variables:\n${result.error.issues.map((issue) => `- ${issue.path.join(".")}: ${issue.message}`).join("\n")}`);
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { serverEnvSchema } from "./env";
+import { parseOrThrow, serverEnvSchema } from "./env";
 
 describe("server env schema", () => {
   it("defaults NODE_ENV to development when unset", () => {
@@ -24,5 +24,16 @@ describe("server env schema", () => {
 
   it("rejects a malformed EMAIL_FROM", () => {
     expect(() => serverEnvSchema.parse({ EMAIL_FROM: "not-an-email" })).toThrow();
+  });
+
+  it("treats an empty-string optional var the same as unset, via parseOrThrow", () => {
+    const result = parseOrThrow(
+      serverEnvSchema,
+      { DATABASE_URL: "", RESEND_API_KEY: "", EMAIL_FROM: "" },
+      "server",
+    );
+    expect(result.DATABASE_URL).toBeUndefined();
+    expect(result.RESEND_API_KEY).toBeUndefined();
+    expect(result.EMAIL_FROM).toBeUndefined();
   });
 });
