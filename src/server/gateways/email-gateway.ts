@@ -12,12 +12,22 @@ export const EmailGateway = {
       return;
     }
 
+    if (!serverEnv.APP_URL) {
+      console.warn(
+        "[EmailGateway] APP_URL is not configured — the inquiry-received email's images won't render.",
+      );
+    }
+
     const resend = new Resend(serverEnv.RESEND_API_KEY);
     await resend.emails.send({
-      from: serverEnv.EMAIL_FROM,
+      from: `Memory Studio OC <${serverEnv.EMAIL_FROM}>`,
       to: params.to,
       subject: "We received your Memory Studio inquiry",
-      react: InquiryReceivedEmail({ firstName: params.firstName, eventDate: params.eventDate }),
+      react: InquiryReceivedEmail({
+        firstName: params.firstName,
+        eventDate: params.eventDate,
+        assetsBaseUrl: serverEnv.APP_URL ?? "",
+      }),
     });
   },
 };
