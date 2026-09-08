@@ -8,6 +8,13 @@
       "when": 1788078698353,
       "tag": "0000_careful_leper_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788557580483,
+      "tag": "0001_curved_lord_hawal",
+      "breakpoints": true
     }
   ]
 }
