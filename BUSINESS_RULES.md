@@ -212,7 +212,7 @@ Initial regular package targets:
 
 | Package | Price |
 |---|---:|
-| Cocktail | $499 |
+| Moment | $499 |
 | Signature | $699 |
 | Keepsake | $949 |
 

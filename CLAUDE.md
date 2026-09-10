@@ -369,7 +369,7 @@ Initial package pricing may be represented in `src/config/pricing.ts` until a da
 Initial regular package targets:
 
 ```text
-Cocktail   $499
+Moment     $499
 Signature  $699
 Keepsake   $949
 ```

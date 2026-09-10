@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { getInquiry } from "@/server/services/inquiries";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ReviewActions } from "./review-actions";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -31,8 +33,11 @@ export default async function AdminInquiryDetailPage({ params }: { params: Promi
         <Badge>{inquiry.status}</Badge>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
         <ReviewActions id={inquiry.id} currentStatus={inquiry.status} />
+        {inquiry.status !== "converted" ? (
+          <Button render={<Link href={`/admin/inquiries/${inquiry.id}/approve`} />}>Approve</Button>
+        ) : null}
       </div>
 
       <dl className="mt-8 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">

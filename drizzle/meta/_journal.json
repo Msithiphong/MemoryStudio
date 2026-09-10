@@ -15,6 +15,13 @@
       "when": 1788557580483,
       "tag": "0001_curved_lord_hawal",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788998760002,
+      "tag": "0002_smart_lizard",
+      "breakpoints": true
     }
   ]
 }

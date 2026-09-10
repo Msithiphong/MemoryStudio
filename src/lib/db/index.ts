@@ -19,3 +19,8 @@ export function getDb() {
   cached = drizzle(client, { schema });
   return cached;
 }
+
+export type Db = ReturnType<typeof getDb>;
+type TransactionCallback = Parameters<Db["transaction"]>[0];
+/** A plain db handle or an in-flight transaction — repositories accept either so a service can compose multiple calls into one atomic transaction. */
+export type DbExecutor = Db | Parameters<TransactionCallback>[0];
