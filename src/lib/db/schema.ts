@@ -5,6 +5,7 @@ import {
   date,
   foreignKey,
   index,
+  inet,
   integer,
   jsonb,
   pgEnum,
@@ -358,3 +359,75 @@ export const clientSessions = pgTable(
 
 export type ClientSession = typeof clientSessions.$inferSelect;
 export type NewClientSession = typeof clientSessions.$inferInsert;
+
+export const contractStatusEnum = pgEnum("contract_status", ["draft", "signed", "superseded"]);
+
+export const contractTemplates = pgTable(
+  "contract_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    version: text("version").notNull().unique(),
+    name: text("name").notNull(),
+
+    sourceFormat: text("source_format").notNull(),
+    sourceContent: text("source_content").notNull(),
+
+    isActive: boolean("is_active").notNull().default(false),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("contract_templates_one_active_template").on(table.isActive).where(sql`${table.isActive} = true`),
+  ],
+);
+
+export type ContractTemplate = typeof contractTemplates.$inferSelect;
+export type NewContractTemplate = typeof contractTemplates.$inferInsert;
+
+export const contracts = pgTable(
+  "contracts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id),
+    templateId: uuid("template_id").references(() => contractTemplates.id),
+
+    versionNumber: integer("version_number").notNull(),
+    status: contractStatusEnum("status").notNull(),
+
+    renderedContent: text("rendered_content").notNull(),
+    contentHash: text("content_hash").notNull(),
+
+    bookingTotalCents: integer("booking_total_cents").notNull(),
+    currency: text("currency").notNull().default("usd"),
+
+    signedName: text("signed_name"),
+    signedEmail: text("signed_email"),
+    accepted: boolean("accepted").notNull().default(false),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+    signedIp: inet("signed_ip"),
+    signedUserAgent: text("signed_user_agent"),
+
+    supersededAt: timestamp("superseded_at", { withTimezone: true }),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("contracts_booking_id_version_number_unique").on(table.bookingId, table.versionNumber),
+    uniqueIndex("contracts_one_current_per_booking").on(table.bookingId).where(sql`${table.status} <> 'superseded'`),
+    index("contracts_booking_id_status_idx").on(table.bookingId, table.status),
+
+    check("contracts_version_number_positive", sql`${table.versionNumber} > 0`),
+    check("contracts_booking_total_cents_nonnegative", sql`${table.bookingTotalCents} >= 0`),
+    check("contracts_content_hash_format", sql`${table.contentHash} ~ '^[0-9a-f]{64}$'`),
+    check(
+      "contracts_signed_requires_fields",
+      sql`${table.status} <> 'signed' OR (${table.accepted} = true AND ${table.signedAt} IS NOT NULL AND ${table.signedName} IS NOT NULL AND ${table.signedEmail} IS NOT NULL)`,
+    ),
+    check("contracts_superseded_requires_superseded_at", sql`${table.status} <> 'superseded' OR ${table.supersededAt} IS NOT NULL`),
+  ],
+);
+
+export type Contract = typeof contracts.$inferSelect;
+export type NewContract = typeof contracts.$inferInsert;

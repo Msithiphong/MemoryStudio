@@ -4,6 +4,7 @@ import { serverEnv } from "@/lib/env";
 import { InquiryReceivedEmail } from "@/lib/email/inquiry-received";
 import { BookingHoldEmail } from "@/lib/email/booking-hold";
 import { MagicLinkEmail } from "@/lib/email/magic-link";
+import { ContractSignedEmail } from "@/lib/email/contract-signed";
 
 function getResendClient(): Resend | null {
   if (!serverEnv.RESEND_API_KEY || !serverEnv.EMAIL_FROM) {
@@ -61,6 +62,30 @@ export const EmailGateway = {
       react: MagicLinkEmail({
         bookingReference: params.bookingReference,
         url: params.url,
+        assetsBaseUrl: serverEnv.APP_URL ?? "",
+      }),
+    });
+  },
+
+  async sendContractSigned(params: {
+    to: string;
+    firstName: string;
+    referenceCode: string;
+    versionNumber: number;
+    signedAt: Date;
+  }): Promise<void> {
+    const resend = getResendClient();
+    if (!resend) return;
+
+    await resend.emails.send({
+      from: `Memory Studio OC <${serverEnv.EMAIL_FROM}>`,
+      to: params.to,
+      subject: "Your Memory Studio contract is signed",
+      react: ContractSignedEmail({
+        firstName: params.firstName,
+        referenceCode: params.referenceCode,
+        versionNumber: params.versionNumber,
+        signedAt: params.signedAt.toLocaleString(),
         assetsBaseUrl: serverEnv.APP_URL ?? "",
       }),
     });

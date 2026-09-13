@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCurrentClient } from "@/server/auth/get-current-client";
 import { getBooking } from "@/server/services/bookings";
 import { formatPrice } from "@/config/pricing";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { BookingStatus } from "@/lib/db/schema";
 
@@ -89,6 +91,10 @@ export default async function ClientOverviewPage() {
             <span>{formatPrice(booking.requiredRetainerCents)}</span>
           </div>
         </div>
+      </div>
+
+      <div className="mt-8">
+        <Button render={<Link href="/client/contract" />}>View &amp; sign contract</Button>
       </div>
     </div>
   );

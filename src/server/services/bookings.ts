@@ -7,25 +7,12 @@ import { AuditRepository } from "@/server/repositories/audit-repository";
 import { EmailGateway } from "@/server/gateways/email-gateway";
 import { sendAccessLink } from "@/server/services/client-access";
 import { generateReferenceCode } from "@/lib/booking-reference";
+import { isUniqueViolation } from "@/server/services/db-errors";
 import type { LineItemInput } from "@/lib/validation/booking";
 import type { Booking, BookingLineItem, DateReservation } from "@/lib/db/schema";
 
 const HOLD_DURATION_HOURS = 72; // BR-AVL-005 recommended default — TBD before launch
 const MAX_REFERENCE_CODE_ATTEMPTS = 5;
-
-function isUniqueViolation(error: unknown, constraintName: string): boolean {
-  // Drizzle wraps postgres.js's raw PostgresError in its own error, with the real
-  // Postgres fields (code, constraint_name) on `.cause`, not on the thrown error itself.
-  const cause = error instanceof Error && error.cause ? error.cause : error;
-  return (
-    typeof cause === "object" &&
-    cause !== null &&
-    "code" in cause &&
-    (cause as { code?: string }).code === "23505" &&
-    "constraint_name" in cause &&
-    (cause as { constraint_name?: string }).constraint_name === constraintName
-  );
-}
 
 export class DateAlreadyHeldError extends Error {
   constructor() {
@@ -111,15 +98,18 @@ export async function approveInquiry(
 
         await InquiryRepository.updateStatus(inquiry.id, "converted", tx);
 
-        await AuditRepository.record({
-          actorType: "admin",
-          actorId: input.actor.id,
-          actorDisplayName: input.actor.displayName,
-          inquiryId: inquiry.id,
-          bookingId: created.id,
-          action: "inquiry.approved",
-          metadataJson: { totalCents, requiredRetainerCents, referenceCode: created.referenceCode },
-        });
+        await AuditRepository.record(
+          {
+            actorType: "admin",
+            actorId: input.actor.id,
+            actorDisplayName: input.actor.displayName,
+            inquiryId: inquiry.id,
+            bookingId: created.id,
+            action: "inquiry.approved",
+            metadataJson: { totalCents, requiredRetainerCents, referenceCode: created.referenceCode },
+          },
+          tx,
+        );
 
         return created;
       });

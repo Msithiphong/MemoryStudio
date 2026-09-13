@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 
 import { getBooking } from "@/server/services/bookings";
+import { getOrCreateCurrentContract, NoActiveContractTemplateError } from "@/server/services/contracts";
 import { formatPrice } from "@/config/pricing";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { BookingStatus } from "@/lib/db/schema";
+import type { BookingStatus, Contract } from "@/lib/db/schema";
 
 const STATUS_VARIANTS: Record<BookingStatus, "default" | "secondary" | "outline" | "destructive"> = {
   hold: "default",
@@ -33,6 +34,14 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   }
 
   const { booking, lineItems, reservation } = result;
+
+  let contract: Contract | null = null;
+  let contractError: string | null = null;
+  try {
+    contract = await getOrCreateCurrentContract(booking.id);
+  } catch (error) {
+    contractError = error instanceof NoActiveContractTemplateError ? error.message : "Could not load the contract.";
+  }
 
   return (
     <div>
@@ -92,6 +101,23 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             <span>{formatPrice(booking.requiredRetainerCents)}</span>
           </div>
         </div>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold">Contract</h2>
+        {contractError ? (
+          <p className="mt-2 text-sm text-destructive">{contractError}</p>
+        ) : (
+          <dl className="mt-3 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+            <Field
+              label="Status"
+              value={<Badge variant={contract!.status === "signed" ? "secondary" : "default"}>{contract!.status}</Badge>}
+            />
+            <Field label="Version" value={contract!.versionNumber} />
+            <Field label="Signed by" value={contract!.signedName} />
+            <Field label="Signed at" value={contract!.signedAt ? new Date(contract!.signedAt).toLocaleString() : null} />
+          </dl>
+        )}
       </div>
     </div>
   );
