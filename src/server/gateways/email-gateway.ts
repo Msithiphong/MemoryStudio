@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { serverEnv } from "@/lib/env";
 import { InquiryReceivedEmail } from "@/lib/email/inquiry-received";
 import { BookingHoldEmail } from "@/lib/email/booking-hold";
+import { MagicLinkEmail } from "@/lib/email/magic-link";
 
 function getResendClient(): Resend | null {
   if (!serverEnv.RESEND_API_KEY || !serverEnv.EMAIL_FROM) {
@@ -44,6 +45,22 @@ export const EmailGateway = {
         firstName: params.firstName,
         eventDate: params.eventDate,
         referenceCode: params.referenceCode,
+        assetsBaseUrl: serverEnv.APP_URL ?? "",
+      }),
+    });
+  },
+
+  async sendMagicLink(params: { to: string; bookingReference: string; url: string }): Promise<void> {
+    const resend = getResendClient();
+    if (!resend) return;
+
+    await resend.emails.send({
+      from: `Memory Studio OC <${serverEnv.EMAIL_FROM}>`,
+      to: params.to,
+      subject: "View your Memory Studio booking",
+      react: MagicLinkEmail({
+        bookingReference: params.bookingReference,
+        url: params.url,
         assetsBaseUrl: serverEnv.APP_URL ?? "",
       }),
     });

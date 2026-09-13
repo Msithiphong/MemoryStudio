@@ -5,6 +5,7 @@ import { DateReservationRepository } from "@/server/repositories/date-reservatio
 import { InquiryRepository } from "@/server/repositories/inquiry-repository";
 import { AuditRepository } from "@/server/repositories/audit-repository";
 import { EmailGateway } from "@/server/gateways/email-gateway";
+import { sendAccessLink } from "@/server/services/client-access";
 import { generateReferenceCode } from "@/lib/booking-reference";
 import type { LineItemInput } from "@/lib/validation/booking";
 import type { Booking, BookingLineItem, DateReservation } from "@/lib/db/schema";
@@ -132,6 +133,12 @@ export async function approveInquiry(
         });
       } catch (error) {
         console.error("[approveInquiry] Failed to send booking-hold email:", error);
+      }
+
+      try {
+        await sendAccessLink(booking);
+      } catch (error) {
+        console.error("[approveInquiry] Failed to send client access link:", error);
       }
 
       return booking;

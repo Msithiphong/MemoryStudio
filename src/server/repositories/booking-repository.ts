@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 
 import { getDb, type DbExecutor } from "@/lib/db";
 import { bookings, type Booking, type NewBooking } from "@/lib/db/schema";
@@ -11,6 +11,16 @@ export const BookingRepository = {
 
   async findById(id: string, executor: DbExecutor = getDb()): Promise<Booking | null> {
     const [booking] = await executor.select().from(bookings).where(eq(bookings.id, id)).limit(1);
+    return booking ?? null;
+  },
+
+  async findActiveByEmail(email: string, executor: DbExecutor = getDb()): Promise<Booking | null> {
+    const [booking] = await executor
+      .select()
+      .from(bookings)
+      .where(and(eq(sql`lower(${bookings.email})`, email.toLowerCase()), ne(bookings.status, "cancelled")))
+      .orderBy(desc(bookings.createdAt))
+      .limit(1);
     return booking ?? null;
   },
 

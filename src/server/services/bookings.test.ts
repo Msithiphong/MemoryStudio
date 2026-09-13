@@ -2,7 +2,7 @@ import { describe, expect, it, afterEach } from "vitest";
 import { eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
-import { inquiries, dateReservations, bookingLineItems, bookings, auditLog } from "@/lib/db/schema";
+import { inquiries, dateReservations, bookingLineItems, bookings, auditLog, clientMagicLinks, clientSessions } from "@/lib/db/schema";
 import { InquiryRepository } from "@/server/repositories/inquiry-repository";
 import { approveInquiry, DateAlreadyHeldError } from "./bookings";
 
@@ -34,6 +34,8 @@ describe.skipIf(!hasDb)("approveInquiry — concurrent date holds", () => {
   afterEach(async () => {
     const db = getDb();
     for (const bookingId of createdBookingIds) {
+      await db.delete(clientSessions).where(eq(clientSessions.bookingId, bookingId));
+      await db.delete(clientMagicLinks).where(eq(clientMagicLinks.bookingId, bookingId));
       await db.delete(dateReservations).where(eq(dateReservations.bookingId, bookingId));
       await db.delete(bookingLineItems).where(eq(bookingLineItems.bookingId, bookingId));
       await db.delete(auditLog).where(eq(auditLog.bookingId, bookingId));

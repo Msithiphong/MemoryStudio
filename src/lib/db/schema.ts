@@ -298,3 +298,63 @@ export const dateReservations = pgTable(
 
 export type DateReservation = typeof dateReservations.$inferSelect;
 export type NewDateReservation = typeof dateReservations.$inferInsert;
+
+export const clientMagicLinks = pgTable(
+  "client_magic_links",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id),
+
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("client_magic_links_token_hash_idx").on(table.tokenHash),
+    index("client_magic_links_booking_id_idx").on(table.bookingId),
+    index("client_magic_links_expires_at_idx").on(table.expiresAt),
+
+    check("client_magic_links_token_hash_format", sql`${table.tokenHash} ~ '^[0-9a-f]{64}$'`),
+    check("client_magic_links_expires_after_created", sql`${table.expiresAt} > ${table.createdAt}`),
+    check("client_magic_links_used_after_created", sql`${table.usedAt} IS NULL OR ${table.usedAt} >= ${table.createdAt}`),
+    check("client_magic_links_revoked_after_created", sql`${table.revokedAt} IS NULL OR ${table.revokedAt} >= ${table.createdAt}`),
+  ],
+);
+
+export type ClientMagicLink = typeof clientMagicLinks.$inferSelect;
+export type NewClientMagicLink = typeof clientMagicLinks.$inferInsert;
+
+export const clientSessions = pgTable(
+  "client_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id),
+
+    sessionHash: text("session_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("client_sessions_session_hash_idx").on(table.sessionHash),
+    index("client_sessions_booking_id_idx").on(table.bookingId),
+    index("client_sessions_expires_at_idx").on(table.expiresAt),
+
+    check("client_sessions_session_hash_format", sql`${table.sessionHash} ~ '^[0-9a-f]{64}$'`),
+    check("client_sessions_expires_after_created", sql`${table.expiresAt} > ${table.createdAt}`),
+    check("client_sessions_last_seen_after_created", sql`${table.lastSeenAt} IS NULL OR ${table.lastSeenAt} >= ${table.createdAt}`),
+    check("client_sessions_revoked_after_created", sql`${table.revokedAt} IS NULL OR ${table.revokedAt} >= ${table.createdAt}`),
+  ],
+);
+
+export type ClientSession = typeof clientSessions.$inferSelect;
+export type NewClientSession = typeof clientSessions.$inferInsert;
