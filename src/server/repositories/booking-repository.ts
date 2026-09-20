@@ -14,6 +14,21 @@ export const BookingRepository = {
     return booking ?? null;
   },
 
+  /** Row-locks the booking for the rest of the transaction. */
+  async findByIdForUpdate(id: string, executor: DbExecutor): Promise<Booking | null> {
+    const [booking] = await executor.select().from(bookings).where(eq(bookings.id, id)).for("update").limit(1);
+    return booking ?? null;
+  },
+
+  async markConfirmed(id: string, executor: DbExecutor = getDb()): Promise<Booking | null> {
+    const [booking] = await executor
+      .update(bookings)
+      .set({ status: "confirmed", confirmedAt: new Date() })
+      .where(and(eq(bookings.id, id), eq(bookings.status, "hold")))
+      .returning();
+    return booking ?? null;
+  },
+
   async findActiveByEmail(email: string, executor: DbExecutor = getDb()): Promise<Booking | null> {
     const [booking] = await executor
       .select()

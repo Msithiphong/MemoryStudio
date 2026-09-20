@@ -8,6 +8,7 @@ import { EmailGateway } from "@/server/gateways/email-gateway";
 import { sendAccessLink } from "@/server/services/client-access";
 import { generateReferenceCode } from "@/lib/booking-reference";
 import { isUniqueViolation } from "@/server/services/db-errors";
+import { calculateRetainerCents } from "@/lib/money";
 import type { LineItemInput } from "@/lib/validation/booking";
 import type { Booking, BookingLineItem, DateReservation } from "@/lib/db/schema";
 
@@ -62,7 +63,7 @@ export async function approveInquiry(
           lineTotalCents: item.quantity * item.unitPriceCents,
         }));
         const totalCents = lineItemsWithTotals.reduce((sum, item) => sum + item.lineTotalCents, 0);
-        const requiredRetainerCents = Math.round(totalCents * 0.3);
+        const requiredRetainerCents = calculateRetainerCents(totalCents);
 
         const created = await BookingRepository.create(
           {

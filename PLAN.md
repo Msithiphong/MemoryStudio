@@ -350,27 +350,27 @@ stripe_events
 
 ## Tasks
 
-- [ ] Configure Stripe test mode.
-- [ ] Implement server-only Checkout Session creation.
-- [ ] Validate booking eligibility.
-- [ ] Calculate amount from database data only.
-- [ ] Add internal IDs to Stripe metadata.
-- [ ] Build Stripe webhook endpoint.
-- [ ] Verify webhook signature.
-- [ ] Add event idempotency ledger.
-- [ ] Record payment.
-- [ ] Convert hold/reservation to confirmed after verified payment.
-- [ ] Build payment success/status page.
-- [ ] Send retainer-paid/booking-confirmed email.
+- [x] Configure Stripe test mode.
+- [x] Implement server-only Checkout Session creation.
+- [x] Validate booking eligibility.
+- [x] Calculate amount from database data only.
+- [x] Add internal IDs to Stripe metadata.
+- [x] Build Stripe webhook endpoint.
+- [x] Verify webhook signature.
+- [x] Add event idempotency ledger.
+- [x] Record payment.
+- [x] Convert hold/reservation to confirmed after verified payment.
+- [x] Build payment success/status page.
+- [x] Send retainer-paid/booking-confirmed email.
 
 ## Critical Tests
 
-- [ ] Cannot create session without signed contract.
-- [ ] Cannot create session after hold expiration.
-- [ ] Browser success route alone does not confirm.
-- [ ] Duplicate webhook does not double-pay.
-- [ ] Wrong amount does not silently confirm.
-- [ ] Payment for conflicted/invalid hold is flagged for manual review.
+- [x] Cannot create session without signed contract.
+- [x] Cannot create session after hold expiration.
+- [x] Browser success route alone does not confirm.
+- [x] Duplicate webhook does not double-pay.
+- [x] Wrong amount does not silently confirm.
+- [x] Payment for conflicted/invalid hold is flagged for manual review.
 
 ## Acceptance Criteria
 

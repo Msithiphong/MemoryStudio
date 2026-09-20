@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 
 import { getBooking } from "@/server/services/bookings";
+import { PaymentRepository } from "@/server/repositories/payment-repository";
 import { getOrCreateCurrentContract, NoActiveContractTemplateError } from "@/server/services/contracts";
-import { formatPrice } from "@/config/pricing";
+import { formatMoney } from "@/lib/money";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { BookingStatus, Contract } from "@/lib/db/schema";
@@ -43,8 +44,27 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     contractError = error instanceof NoActiveContractTemplateError ? error.message : "Could not load the contract.";
   }
 
+  const payments = await PaymentRepository.listForBooking(booking.id);
+  const flaggedPayments = payments.filter((p) => p.manualReviewReason);
+
   return (
     <div>
+      {flaggedPayments.length > 0 ? (
+        <div role="alert" className="mb-6 rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm">
+          <p className="font-semibold text-destructive">Payment needs manual review</p>
+          <p className="mt-1">
+            Money was received, but this booking was not confirmed automatically. Check the payment in Stripe and decide how to proceed.
+          </p>
+          <ul className="mt-2 list-disc pl-5">
+            {flaggedPayments.map((p) => (
+              <li key={p.id}>
+                {formatMoney(p.amountCents)} — {p.manualReviewReason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{booking.referenceCode}</h1>
@@ -83,8 +103,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                   <TableCell>{item.description}</TableCell>
                   <TableCell className="text-muted-foreground">{item.itemType}</TableCell>
                   <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{formatPrice(item.unitPriceCents)}</TableCell>
-                  <TableCell>{formatPrice(item.lineTotalCents)}</TableCell>
+                  <TableCell>{formatMoney(item.unitPriceCents)}</TableCell>
+                  <TableCell>{formatMoney(item.lineTotalCents)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -94,11 +114,11 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
         <div className="mt-4 ml-auto max-w-xs space-y-1">
           <div className="flex justify-between text-sm">
             <span>Total</span>
-            <span className="font-semibold">{formatPrice(booking.totalCents)}</span>
+            <span className="font-semibold">{formatMoney(booking.totalCents)}</span>
           </div>
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Required retainer (30%)</span>
-            <span>{formatPrice(booking.requiredRetainerCents)}</span>
+            <span>{formatMoney(booking.requiredRetainerCents)}</span>
           </div>
         </div>
       </div>
@@ -117,6 +137,40 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             <Field label="Signed by" value={contract!.signedName} />
             <Field label="Signed at" value={contract!.signedAt ? new Date(contract!.signedAt).toLocaleString() : null} />
           </dl>
+        )}
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold">Payments</h2>
+        {payments.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">No payment attempts yet.</p>
+        ) : (
+          <div className="mt-3 rounded-lg border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Paid at</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payments.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell>{p.paymentType}</TableCell>
+                    <TableCell>
+                      <Badge variant={p.manualReviewReason ? "destructive" : p.status === "paid" ? "secondary" : "outline"}>
+                        {p.manualReviewReason ? `${p.status} — review` : p.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formatMoney(p.amountCents)}</TableCell>
+                    <TableCell className="text-muted-foreground">{p.paidAt ? new Date(p.paidAt).toLocaleString() : "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { getDb, type DbExecutor } from "@/lib/db";
 import { dateReservations, type DateReservation, type NewDateReservation } from "@/lib/db/schema";
@@ -24,6 +24,26 @@ export const DateReservationRepository = {
       .from(dateReservations)
       .where(eq(dateReservations.bookingId, bookingId))
       .limit(1);
+    return reservation ?? null;
+  },
+
+  /** Row-locks the reservation for the rest of the transaction. */
+  async findByBookingIdForUpdate(bookingId: string, executor: DbExecutor): Promise<DateReservation | null> {
+    const [reservation] = await executor
+      .select()
+      .from(dateReservations)
+      .where(eq(dateReservations.bookingId, bookingId))
+      .for("update")
+      .limit(1);
+    return reservation ?? null;
+  },
+
+  async markConfirmed(id: string, executor: DbExecutor = getDb()): Promise<DateReservation | null> {
+    const [reservation] = await executor
+      .update(dateReservations)
+      .set({ status: "confirmed", holdExpiresAt: null, confirmedAt: new Date() })
+      .where(and(eq(dateReservations.id, id), eq(dateReservations.status, "hold")))
+      .returning();
     return reservation ?? null;
   },
 

@@ -36,6 +36,13 @@
       "when": 1789285936269,
       "tag": "0004_mushy_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789867939133,
+      "tag": "0005_stripe_payments",
+      "breakpoints": true
     }
   ]
 }

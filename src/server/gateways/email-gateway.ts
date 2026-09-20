@@ -5,6 +5,7 @@ import { InquiryReceivedEmail } from "@/lib/email/inquiry-received";
 import { BookingHoldEmail } from "@/lib/email/booking-hold";
 import { MagicLinkEmail } from "@/lib/email/magic-link";
 import { ContractSignedEmail } from "@/lib/email/contract-signed";
+import { BookingConfirmedEmail } from "@/lib/email/booking-confirmed";
 
 function getResendClient(): Resend | null {
   if (!serverEnv.RESEND_API_KEY || !serverEnv.EMAIL_FROM) {
@@ -86,6 +87,32 @@ export const EmailGateway = {
         referenceCode: params.referenceCode,
         versionNumber: params.versionNumber,
         signedAt: params.signedAt.toLocaleString(),
+        assetsBaseUrl: serverEnv.APP_URL ?? "",
+      }),
+    });
+  },
+
+  async sendBookingConfirmed(params: {
+    to: string;
+    firstName: string;
+    referenceCode: string;
+    eventDate: string;
+    amountPaid: string;
+    remainingBalance: string;
+  }): Promise<void> {
+    const resend = getResendClient();
+    if (!resend) return;
+
+    await resend.emails.send({
+      from: `Memory Studio OC <${serverEnv.EMAIL_FROM}>`,
+      to: params.to,
+      subject: "Your Memory Studio booking is confirmed",
+      react: BookingConfirmedEmail({
+        firstName: params.firstName,
+        referenceCode: params.referenceCode,
+        eventDate: params.eventDate,
+        amountPaid: params.amountPaid,
+        remainingBalance: params.remainingBalance,
         assetsBaseUrl: serverEnv.APP_URL ?? "",
       }),
     });

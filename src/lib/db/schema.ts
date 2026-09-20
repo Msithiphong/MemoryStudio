@@ -431,3 +431,91 @@ export const contracts = pgTable(
 
 export type Contract = typeof contracts.$inferSelect;
 export type NewContract = typeof contracts.$inferInsert;
+
+export const paymentTypeEnum = pgEnum("payment_type", ["deposit", "balance", "addon", "other"]);
+
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "pending",
+  "paid",
+  "failed",
+  "cancelled",
+  "partially_refunded",
+  "refunded",
+]);
+
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id),
+
+    paymentType: paymentTypeEnum("payment_type").notNull(),
+    status: paymentStatusEnum("status").notNull(),
+
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull().default("usd"),
+
+    stripeCheckoutSessionId: text("stripe_checkout_session_id").unique(),
+    stripePaymentIntentId: text("stripe_payment_intent_id").unique(),
+    stripeInvoiceId: text("stripe_invoice_id"),
+
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    refundedCents: integer("refunded_cents").notNull().default(0),
+
+    // Set when money arrived but the booking could not be safely confirmed from it
+    // (BR-PAY-008 / wrong amount). A non-null value means an admin must review this payment.
+    manualReviewReason: text("manual_review_reason"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => sql`now()`),
+  },
+  (table) => [
+    index("payments_booking_id_status_idx").on(table.bookingId, table.status),
+    // At most one open Checkout attempt per booking and payment type, so concurrent "Pay" clicks
+    // converge on one session instead of creating duplicates.
+    uniqueIndex("payments_one_pending_per_booking_type")
+      .on(table.bookingId, table.paymentType)
+      .where(sql`${table.status} = 'pending'`),
+
+    check("payments_amount_cents_positive", sql`${table.amountCents} > 0`),
+    check("payments_refunded_cents_nonnegative", sql`${table.refundedCents} >= 0`),
+    check("payments_refunded_cents_within_amount", sql`${table.refundedCents} <= ${table.amountCents}`),
+    check("payments_paid_requires_paid_at", sql`${table.status} <> 'paid' OR (${table.paidAt} IS NOT NULL AND ${table.refundedCents} = 0)`),
+    check(
+      "payments_partially_refunded_requires_fields",
+      sql`${table.status} <> 'partially_refunded' OR (${table.paidAt} IS NOT NULL AND ${table.refundedCents} > 0 AND ${table.refundedCents} < ${table.amountCents})`,
+    ),
+    check(
+      "payments_refunded_requires_fields",
+      sql`${table.status} <> 'refunded' OR (${table.paidAt} IS NOT NULL AND ${table.refundedCents} = ${table.amountCents})`,
+    ),
+    check(
+      "payments_unpaid_has_no_refunds",
+      sql`${table.status} NOT IN ('pending', 'failed', 'cancelled') OR ${table.refundedCents} = 0`,
+    ),
+  ],
+);
+
+export type Payment = typeof payments.$inferSelect;
+export type NewPayment = typeof payments.$inferInsert;
+export type PaymentType = (typeof paymentTypeEnum.enumValues)[number];
+export type PaymentStatus = (typeof paymentStatusEnum.enumValues)[number];
+
+export const stripeEvents = pgTable("stripe_events", {
+  stripeEventId: text("stripe_event_id").primaryKey(),
+  eventType: text("event_type").notNull(),
+  apiVersion: text("api_version"),
+
+  processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
+  bookingId: uuid("booking_id").references(() => bookings.id),
+
+  payloadReference: text("payload_reference"),
+});
+
+export type StripeEvent = typeof stripeEvents.$inferSelect;
+export type NewStripeEvent = typeof stripeEvents.$inferInsert;

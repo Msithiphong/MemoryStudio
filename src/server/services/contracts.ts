@@ -7,7 +7,7 @@ import { AuditRepository } from "@/server/repositories/audit-repository";
 import { EmailGateway } from "@/server/gateways/email-gateway";
 import { renderContractTemplate } from "@/lib/contract-render";
 import { hashContractContent } from "@/lib/contract-hash";
-import { formatPrice } from "@/config/pricing";
+import { formatMoney } from "@/lib/money";
 import { isUniqueViolation } from "@/server/services/db-errors";
 import type { Booking, BookingLineItem, Contract } from "@/lib/db/schema";
 
@@ -42,8 +42,8 @@ function buildContractFields(booking: Booking, lineItems: BookingLineItem[]): Re
       day: "numeric",
     }),
     packageName: packageItem?.description ?? "Selected package",
-    totalAmount: formatPrice(booking.totalCents),
-    retainerAmount: formatPrice(booking.requiredRetainerCents),
+    totalAmount: formatMoney(booking.totalCents),
+    retainerAmount: formatMoney(booking.requiredRetainerCents),
     referenceCode: booking.referenceCode,
   };
 }

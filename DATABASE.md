@@ -640,9 +640,13 @@ stripe_invoice_id          text NULL
 paid_at                    timestamptz NULL
 refunded_cents             integer NOT NULL DEFAULT 0
 
+manual_review_reason       text NULL
+
 created_at                 timestamptz NOT NULL DEFAULT now()
 updated_at                 timestamptz NOT NULL DEFAULT now()
 ```
+
+`manual_review_reason` is non-null when money was received but the booking could not be safely confirmed from it (BR-PAY-008: booking no longer on hold, hold released or expired before payment, contract not signed/out of date, or the paid amount did not match the expected amount). The payment stays `paid` because the money arrived; the flag tells an admin to review it. It is shown on the admin booking page.
 
 Suggested enums:
 
@@ -692,6 +696,12 @@ Add an index:
 
 ```text
 (booking_id, status)
+```
+
+Add a partial unique index so a booking has at most one open Checkout attempt per payment type:
+
+```text
+UNIQUE (booking_id, payment_type) WHERE status = 'pending'
 ```
 
 `stripe_payment_intent_id` is unique when present. `stripe_invoice_id` is intentionally not globally unique because a later invoice workflow may associate multiple payment events with one invoice.

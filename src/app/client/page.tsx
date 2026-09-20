@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentClient } from "@/server/auth/get-current-client";
 import { getBooking } from "@/server/services/bookings";
-import { formatPrice } from "@/config/pricing";
+import { formatMoney } from "@/lib/money";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -74,7 +74,7 @@ export default async function ClientOverviewPage() {
                 <TableRow key={item.id}>
                   <TableCell>{item.description}</TableCell>
                   <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{formatPrice(item.lineTotalCents)}</TableCell>
+                  <TableCell>{formatMoney(item.lineTotalCents)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -84,17 +84,22 @@ export default async function ClientOverviewPage() {
         <div className="mt-4 ml-auto max-w-xs space-y-1">
           <div className="flex justify-between text-sm">
             <span>Total</span>
-            <span className="font-semibold">{formatPrice(booking.totalCents)}</span>
+            <span className="font-semibold">{formatMoney(booking.totalCents)}</span>
           </div>
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Required retainer (30%)</span>
-            <span>{formatPrice(booking.requiredRetainerCents)}</span>
+            <span>{formatMoney(booking.requiredRetainerCents)}</span>
           </div>
         </div>
       </div>
 
-      <div className="mt-8">
-        <Button render={<Link href="/client/contract" />}>View &amp; sign contract</Button>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Button variant={booking.status === "hold" ? "outline" : "default"} render={<Link href="/client/contract" />}>
+          View &amp; sign contract
+        </Button>
+        <Button variant="outline" render={<Link href="/client/payment" />}>
+          {booking.status === "hold" ? "Pay retainer" : "Payment status"}
+        </Button>
       </div>
     </div>
   );
