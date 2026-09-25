@@ -406,13 +406,13 @@ No color selection in V1.
 
 ## Tasks
 
-- [ ] Build customization form.
-- [ ] Enforce package/service prompt limits.
-- [ ] Save drafts or explicit submission.
-- [ ] Add due date.
-- [ ] Add admin lock/unlock.
-- [ ] Add reminder email capability.
-- [ ] Add admin preview of client selections.
+- [x] Build customization form.
+- [x] Enforce package/service prompt limits.
+- [x] Save drafts or explicit submission.
+- [x] Add due date.
+- [x] Add admin lock/unlock.
+- [x] Add reminder email capability.
+- [x] Add admin preview of client selections.
 
 ## Acceptance Criteria
 

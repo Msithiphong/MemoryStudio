@@ -1,4 +1,4 @@
-import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 
 import { getDb, type DbExecutor } from "@/lib/db";
 import { bookings, type Booking, type NewBooking } from "@/lib/db/schema";
@@ -44,6 +44,31 @@ export const BookingRepository = {
       .update(bookings)
       .set({ status: "expired", expiredAt: new Date() })
       .where(eq(bookings.id, id))
+      .returning();
+    return booking ?? null;
+  },
+
+  async setCustomizationDueAt(id: string, dueAt: Date | null, executor: DbExecutor = getDb()): Promise<Booking | null> {
+    const [booking] = await executor.update(bookings).set({ customizationDueAt: dueAt }).where(eq(bookings.id, id)).returning();
+    return booking ?? null;
+  },
+
+  /** Atomic and idempotent-safe: returns null (a no-op, not an error) if already locked. */
+  async lockCustomization(id: string, executor: DbExecutor = getDb()): Promise<Booking | null> {
+    const [booking] = await executor
+      .update(bookings)
+      .set({ customizationLockedAt: new Date() })
+      .where(and(eq(bookings.id, id), isNull(bookings.customizationLockedAt)))
+      .returning();
+    return booking ?? null;
+  },
+
+  /** Atomic and idempotent-safe: returns null (a no-op, not an error) if already unlocked. */
+  async unlockCustomization(id: string, executor: DbExecutor = getDb()): Promise<Booking | null> {
+    const [booking] = await executor
+      .update(bookings)
+      .set({ customizationLockedAt: null })
+      .where(and(eq(bookings.id, id), isNotNull(bookings.customizationLockedAt)))
       .returning();
     return booking ?? null;
   },

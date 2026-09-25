@@ -905,12 +905,16 @@ welcome_message       text
 signage_text          text
 client_notes          text
 
+max_prompts           integer NOT NULL
+
 submitted_at          timestamptz NULL
 created_at            timestamptz NOT NULL DEFAULT now()
 updated_at            timestamptz NOT NULL DEFAULT now()
 ```
 
-Lock state lives on `bookings.customization_locked_at`.
+`max_prompts` (BR-CUS-003) is seeded from the approved package's default prompt count (Moment 3, Signature 5, Keepsake 5) when the row is first created, then freely adjustable per booking by an admin. It is the enforced ceiling on `booking_prompts` rows for that booking — never trust a client-supplied count against it.
+
+Lock state lives on `bookings.customization_locked_at`. Locking/unlocking is an explicit admin action (BR-ADM-001); it is not automatically derived from `bookings.customization_due_at` passing.
 
 Color fields are intentionally absent in V1.
 

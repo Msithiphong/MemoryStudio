@@ -519,3 +519,65 @@ export const stripeEvents = pgTable("stripe_events", {
 
 export type StripeEvent = typeof stripeEvents.$inferSelect;
 export type NewStripeEvent = typeof stripeEvents.$inferInsert;
+
+export const bookingCustomizations = pgTable(
+  "booking_customizations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .unique()
+      .references(() => bookings.id),
+
+    displayName1: text("display_name_1"),
+    displayName2: text("display_name_2"),
+    welcomeMessage: text("welcome_message"),
+    signageText: text("signage_text"),
+    clientNotes: text("client_notes"),
+
+    // BR-CUS-003: defaults from the approved package when this row is first created, then
+    // freely adjustable per booking by an admin ("exact limits may be adjusted administratively").
+    // Never trust a client-supplied count against this — always re-check server-side.
+    maxPrompts: integer("max_prompts").notNull(),
+
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => sql`now()`),
+  },
+  (table) => [check("booking_customizations_max_prompts_positive", sql`${table.maxPrompts} > 0`)],
+);
+
+export type BookingCustomization = typeof bookingCustomizations.$inferSelect;
+export type NewBookingCustomization = typeof bookingCustomizations.$inferInsert;
+
+export const bookingPrompts = pgTable(
+  "booking_prompts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id),
+
+    promptText: text("prompt_text").notNull(),
+    sortOrder: integer("sort_order").notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => sql`now()`),
+  },
+  (table) => [
+    unique("booking_prompts_booking_id_sort_order_unique").on(table.bookingId, table.sortOrder),
+    index("booking_prompts_booking_id_idx").on(table.bookingId),
+
+    check("booking_prompts_sort_order_nonnegative", sql`${table.sortOrder} >= 0`),
+    check("booking_prompts_prompt_text_nonempty", sql`trim(${table.promptText}) <> ''`),
+  ],
+);
+
+export type BookingPrompt = typeof bookingPrompts.$inferSelect;
+export type NewBookingPrompt = typeof bookingPrompts.$inferInsert;

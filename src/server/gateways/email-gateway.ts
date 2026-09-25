@@ -6,6 +6,7 @@ import { BookingHoldEmail } from "@/lib/email/booking-hold";
 import { MagicLinkEmail } from "@/lib/email/magic-link";
 import { ContractSignedEmail } from "@/lib/email/contract-signed";
 import { BookingConfirmedEmail } from "@/lib/email/booking-confirmed";
+import { CustomizationReminderEmail } from "@/lib/email/customization-reminder";
 
 function getResendClient(): Resend | null {
   if (!serverEnv.RESEND_API_KEY || !serverEnv.EMAIL_FROM) {
@@ -113,6 +114,33 @@ export const EmailGateway = {
         eventDate: params.eventDate,
         amountPaid: params.amountPaid,
         remainingBalance: params.remainingBalance,
+        assetsBaseUrl: serverEnv.APP_URL ?? "",
+      }),
+    });
+  },
+
+  async sendCustomizationReminder(params: {
+    to: string;
+    firstName: string;
+    referenceCode: string;
+    dueAt: Date | null;
+  }): Promise<void> {
+    const resend = getResendClient();
+    if (!resend) return;
+
+    const base = (serverEnv.APP_URL ?? "").replace(/\/$/, "");
+
+    await resend.emails.send({
+      from: `Memory Studio OC <${serverEnv.EMAIL_FROM}>`,
+      to: params.to,
+      subject: "Personalize your Memory Studio guest book",
+      react: CustomizationReminderEmail({
+        firstName: params.firstName,
+        referenceCode: params.referenceCode,
+        dueDateLabel: params.dueAt
+          ? params.dueAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+          : null,
+        customizeUrl: `${base}/client/customize`,
         assetsBaseUrl: serverEnv.APP_URL ?? "",
       }),
     });

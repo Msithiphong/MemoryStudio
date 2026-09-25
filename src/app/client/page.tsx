@@ -100,6 +100,9 @@ export default async function ClientOverviewPage() {
         <Button variant="outline" render={<Link href="/client/payment" />}>
           {booking.status === "hold" ? "Pay retainer" : "Payment status"}
         </Button>
+        <Button variant="outline" render={<Link href="/client/customize" />}>
+          Customize your experience
+        </Button>
       </div>
     </div>
   );

@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { getBooking } from "@/server/services/bookings";
 import { PaymentRepository } from "@/server/repositories/payment-repository";
 import { getOrCreateCurrentContract, NoActiveContractTemplateError } from "@/server/services/contracts";
+import { getOrCreateCustomizationView } from "@/server/services/customizations";
 import { formatMoney } from "@/lib/money";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CustomizationAdminPanel } from "./customization-admin-panel";
 import type { BookingStatus, Contract } from "@/lib/db/schema";
 
 const STATUS_VARIANTS: Record<BookingStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -46,6 +48,8 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
   const payments = await PaymentRepository.listForBooking(booking.id);
   const flaggedPayments = payments.filter((p) => p.manualReviewReason);
+
+  const { customization, prompts, locked, signageApplicable } = await getOrCreateCustomizationView(booking.id);
 
   return (
     <div>
@@ -172,6 +176,44 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             </Table>
           </div>
         )}
+      </div>
+
+      <div className="mt-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Customization</h2>
+          <Badge variant={locked ? "destructive" : customization.submittedAt ? "secondary" : "outline"}>
+            {locked ? "Locked" : customization.submittedAt ? "Submitted" : "Not submitted"}
+          </Badge>
+        </div>
+
+        <dl className="mt-3 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+          <Field label="Display names" value={[customization.displayName1, customization.displayName2].filter(Boolean).join(" & ")} />
+          <Field label="Welcome-screen message" value={customization.welcomeMessage} />
+          {signageApplicable ? <Field label="Signage wording" value={customization.signageText} /> : null}
+          <Field label="Notes to Memory Studio" value={customization.clientNotes} />
+          <Field label="Submitted at" value={customization.submittedAt ? new Date(customization.submittedAt).toLocaleString() : null} />
+          <Field label="Last updated" value={new Date(customization.updatedAt).toLocaleString()} />
+        </dl>
+
+        <div className="mt-4">
+          <p className="text-xs tracking-wide text-muted-foreground uppercase">Recording prompts</p>
+          {prompts.length === 0 ? (
+            <p className="mt-1 text-sm text-muted-foreground">No prompts yet.</p>
+          ) : (
+            <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm">
+              {prompts.map((p) => (
+                <li key={p.id}>{p.promptText}</li>
+              ))}
+            </ol>
+          )}
+        </div>
+
+        <CustomizationAdminPanel
+          bookingId={booking.id}
+          locked={locked}
+          dueDate={booking.customizationDueAt ? new Date(booking.customizationDueAt).toISOString().slice(0, 10) : ""}
+          maxPrompts={customization.maxPrompts}
+        />
       </div>
     </div>
   );
