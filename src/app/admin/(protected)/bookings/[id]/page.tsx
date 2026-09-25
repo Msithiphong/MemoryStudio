@@ -4,10 +4,11 @@ import { getBooking } from "@/server/services/bookings";
 import { PaymentRepository } from "@/server/repositories/payment-repository";
 import { getOrCreateCurrentContract, NoActiveContractTemplateError } from "@/server/services/contracts";
 import { getOrCreateCustomizationView } from "@/server/services/customizations";
-import { formatMoney } from "@/lib/money";
+import { calculateRemainingBalanceCents, formatMoney } from "@/lib/money";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CustomizationAdminPanel } from "./customization-admin-panel";
+import { BalanceAdminPanel } from "./balance-admin-panel";
 import type { BookingStatus, Contract } from "@/lib/db/schema";
 
 const STATUS_VARIANTS: Record<BookingStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -48,6 +49,9 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
   const payments = await PaymentRepository.listForBooking(booking.id);
   const flaggedPayments = payments.filter((p) => p.manualReviewReason);
+
+  const netPaidCents = await PaymentRepository.sumReceivedCentsForBooking(booking.id);
+  const remainingBalanceCents = calculateRemainingBalanceCents(booking.totalCents, netPaidCents);
 
   const { customization, prompts, locked, signageApplicable } = await getOrCreateCustomizationView(booking.id);
 
@@ -124,6 +128,14 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             <span>Required retainer (30%)</span>
             <span>{formatMoney(booking.requiredRetainerCents)}</span>
           </div>
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <span>Paid to date</span>
+            <span>{formatMoney(netPaidCents)}</span>
+          </div>
+          <div className="flex justify-between text-sm font-semibold">
+            <span>Remaining balance</span>
+            <span>{formatMoney(remainingBalanceCents)}</span>
+          </div>
         </div>
       </div>
 
@@ -176,6 +188,12 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             </Table>
           </div>
         )}
+
+        <BalanceAdminPanel
+          bookingId={booking.id}
+          dueDate={booking.balanceDueAt ? new Date(booking.balanceDueAt).toISOString().slice(0, 10) : ""}
+          remainingBalanceCents={remainingBalanceCents}
+        />
       </div>
 
       <div className="mt-8">

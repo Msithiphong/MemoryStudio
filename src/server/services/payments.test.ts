@@ -27,18 +27,27 @@ vi.mock("@/server/gateways/stripe-gateway", async (importOriginal) => {
     StripeGateway: {
       ...original.StripeGateway,
       createDepositCheckoutSession: vi.fn(),
+      createBalanceCheckoutSession: vi.fn(),
       retrieveCheckoutSession: vi.fn(),
       expireCheckoutSession: vi.fn(),
     },
   };
 });
 vi.mock("@/server/gateways/email-gateway", () => ({
-  EmailGateway: { sendBookingConfirmed: vi.fn().mockResolvedValue(undefined) },
+  EmailGateway: { sendBookingConfirmed: vi.fn().mockResolvedValue(undefined), sendBalancePaid: vi.fn().mockResolvedValue(undefined) },
 }));
 
 import { StripeGateway } from "@/server/gateways/stripe-gateway";
 import { EmailGateway } from "@/server/gateways/email-gateway";
-import { applyStripePaymentEvent, createDepositCheckoutSession, getDepositSummary, PaymentNotAllowedError } from "./payments";
+import {
+  applyStripePaymentEvent,
+  createBalanceCheckoutSession,
+  createDepositCheckoutSession,
+  evaluateBalanceEligibility,
+  getBalanceSummary,
+  getDepositSummary,
+  PaymentNotAllowedError,
+} from "./payments";
 
 const hasDb = !!process.env.DATABASE_URL;
 
@@ -59,6 +68,10 @@ describe.skipIf(!hasDb)("payments service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(StripeGateway.createDepositCheckoutSession).mockImplementation(async () => ({
+      id: `cs_test_${Math.random().toString(36).slice(2)}`,
+      url: "https://checkout.stripe.test/pay/abc",
+    }));
+    vi.mocked(StripeGateway.createBalanceCheckoutSession).mockImplementation(async () => ({
       id: `cs_test_${Math.random().toString(36).slice(2)}`,
       url: "https://checkout.stripe.test/pay/abc",
     }));
@@ -128,9 +141,69 @@ describe.skipIf(!hasDb)("payments service", () => {
     return booking;
   }
 
+  /** A booking already confirmed with its retainer paid — the state balance payments start from. */
+  async function createConfirmedBooking(options: { totalCents?: number } = {}): Promise<Booking> {
+    const totalCents = options.totalCents ?? TOTAL_CENTS;
+    const retainerCents = Math.round(totalCents * 0.3);
+    const eventDate = uniqueFutureDate();
+
+    const booking = await BookingRepository.create({
+      referenceCode: generateReferenceCode(),
+      primaryContactName: "__E2E_TEST__ Payer",
+      email: "__e2e_payments__@example.com",
+      eventType: "wedding",
+      eventDate,
+      status: "confirmed",
+      confirmedAt: new Date(),
+      subtotalCents: totalCents,
+      totalCents,
+      requiredRetainerCents: retainerCents,
+    });
+    createdBookingIds.push(booking.id);
+
+    await BookingLineItemRepository.createMany([
+      {
+        bookingId: booking.id,
+        itemType: "package",
+        catalogKey: "package.signature",
+        description: "Signature Package",
+        quantity: 1,
+        unitPriceCents: totalCents,
+        lineTotalCents: totalCents,
+        sortOrder: 0,
+      },
+    ]);
+
+    const content = `Contract for ${booking.referenceCode}`;
+    await ContractRepository.create({
+      bookingId: booking.id,
+      versionNumber: 1,
+      status: "signed",
+      renderedContent: content,
+      contentHash: hashContractContent(content),
+      bookingTotalCents: totalCents,
+      currency: "usd",
+      accepted: true,
+      signedAt: new Date(),
+      signedName: "Test Payer",
+      signedEmail: booking.email,
+    });
+
+    await PaymentRepository.create({
+      bookingId: booking.id,
+      paymentType: "deposit",
+      status: "paid",
+      amountCents: retainerCents,
+      currency: "usd",
+      paidAt: new Date(),
+    });
+
+    return booking;
+  }
+
   let eventCounter = 0;
   function checkoutEvent(
-    payment: { id: string; bookingId: string; stripeCheckoutSessionId: string | null },
+    payment: { id: string; bookingId: string; stripeCheckoutSessionId: string | null; paymentType: string },
     overrides: {
       eventId?: string;
       type?: string;
@@ -157,7 +230,7 @@ describe.skipIf(!hasDb)("payments service", () => {
           payment_intent: `pi_test_${payment.id}`,
           metadata:
             overrides.metadata === undefined
-              ? { paymentId: payment.id, bookingId: payment.bookingId, paymentType: "deposit" }
+              ? { paymentId: payment.id, bookingId: payment.bookingId, paymentType: payment.paymentType }
               : overrides.metadata,
         },
       },
@@ -168,6 +241,13 @@ describe.skipIf(!hasDb)("payments service", () => {
   async function startCheckout(booking: Booking) {
     await createDepositCheckoutSession(booking.id);
     const payment = await PaymentRepository.findPending(booking.id, "deposit");
+    expect(payment).not.toBeNull();
+    return payment!;
+  }
+
+  async function startBalanceCheckout(booking: Booking) {
+    await createBalanceCheckoutSession(booking.id);
+    const payment = await PaymentRepository.findPending(booking.id, "balance");
     expect(payment).not.toBeNull();
     return payment!;
   }
@@ -431,6 +511,151 @@ describe.skipIf(!hasDb)("payments service", () => {
       } as unknown as Stripe.Event);
 
       expect(outcome.kind).toBe("ignored");
+    });
+  });
+
+  describe("evaluateBalanceEligibility", () => {
+    it("is eligible once the retainer has confirmed the booking, for the remaining 70%", async () => {
+      const booking = await createConfirmedBooking();
+      const eligibility = await evaluateBalanceEligibility(booking.id);
+      expect(eligibility).toMatchObject({ ok: true, dueCents: TOTAL_CENTS - RETAINER_CENTS });
+    });
+
+    it("is not eligible before the booking is confirmed", async () => {
+      const booking = await createHeldBooking();
+      const eligibility = await evaluateBalanceEligibility(booking.id);
+      expect(eligibility).toMatchObject({ ok: false, code: "booking_not_confirmed" });
+    });
+
+    it("is not eligible once the balance is already fully paid", async () => {
+      const booking = await createConfirmedBooking();
+      await PaymentRepository.create({
+        bookingId: booking.id,
+        paymentType: "balance",
+        status: "paid",
+        amountCents: TOTAL_CENTS - RETAINER_CENTS,
+        currency: "usd",
+        paidAt: new Date(),
+      });
+
+      const eligibility = await evaluateBalanceEligibility(booking.id);
+      expect(eligibility).toMatchObject({ ok: false, code: "already_paid" });
+    });
+
+    it("stays eligible for a completed booking with an outstanding balance", async () => {
+      const booking = await createConfirmedBooking();
+      const db = getDb();
+      // bookings_completed_requires_fields also needs completedAt and galleryPublishedAt set.
+      await db
+        .update(bookings)
+        .set({ status: "completed", completedAt: new Date(), galleryPublishedAt: new Date() })
+        .where(eq(bookings.id, booking.id));
+
+      const eligibility = await evaluateBalanceEligibility(booking.id);
+      expect(eligibility).toMatchObject({ ok: true, dueCents: TOTAL_CENTS - RETAINER_CENTS });
+    });
+  });
+
+  describe("createBalanceCheckoutSession", () => {
+    it("charges the remaining 70% of the total, with internal ids in the metadata", async () => {
+      const booking = await createConfirmedBooking();
+      const payment = await startBalanceCheckout(booking);
+
+      expect(payment.amountCents).toBe(TOTAL_CENTS - RETAINER_CENTS);
+      expect(payment.status).toBe("pending");
+
+      const args = vi.mocked(StripeGateway.createBalanceCheckoutSession).mock.calls[0][0];
+      expect(args.amountCents).toBe(TOTAL_CENTS - RETAINER_CENTS);
+      expect(args.paymentId).toBe(payment.id);
+      expect(args.bookingId).toBe(booking.id);
+    });
+
+    it("cannot create a session before the booking is confirmed", async () => {
+      const booking = await createHeldBooking();
+      await expect(createBalanceCheckoutSession(booking.id)).rejects.toMatchObject({ code: "booking_not_confirmed" });
+      expect(StripeGateway.createBalanceCheckoutSession).not.toHaveBeenCalled();
+    });
+
+    it("does not collide with an in-flight deposit checkout for the same booking", async () => {
+      // A held booking is never eligible for a balance session at all, but this also proves
+      // the two payment types are tracked independently by the (booking_id, payment_type) index.
+      const booking = await createConfirmedBooking();
+      await startBalanceCheckout(booking);
+      const deposit = await PaymentRepository.findPending(booking.id, "deposit");
+      expect(deposit).toBeNull(); // the retainer for this booking was already recorded paid, not pending
+    });
+  });
+
+  describe("applyStripePaymentEvent — balance payments", () => {
+    it("records the payment without changing the booking's status", async () => {
+      const booking = await createConfirmedBooking();
+      const payment = await startBalanceCheckout(booking);
+
+      const outcome = await applyStripePaymentEvent(checkoutEvent(payment, { amountTotal: payment.amountCents }));
+
+      expect(outcome.kind).toBe("balance_paid");
+      expect((await BookingRepository.findById(booking.id))?.status).toBe("confirmed");
+      const paid = await PaymentRepository.findById(payment.id);
+      expect(paid?.status).toBe("paid");
+      expect(paid?.manualReviewReason).toBeNull();
+      expect(EmailGateway.sendBalancePaid).toHaveBeenCalledTimes(1);
+    });
+
+    it("processes a redelivered balance event exactly once", async () => {
+      const booking = await createConfirmedBooking();
+      const payment = await startBalanceCheckout(booking);
+      const event = checkoutEvent(payment, { amountTotal: payment.amountCents });
+
+      const first = await applyStripePaymentEvent(event);
+      const second = await applyStripePaymentEvent(event);
+
+      expect(first.kind).toBe("balance_paid");
+      expect(second.kind).toBe("duplicate");
+      expect(EmailGateway.sendBalancePaid).toHaveBeenCalledTimes(1);
+    });
+
+    it("flags an overpayment for manual review instead of silently accepting or refunding it", async () => {
+      const booking = await createConfirmedBooking();
+      const payment = await startBalanceCheckout(booking);
+      const overpaidAmount = payment.amountCents + 1_000;
+
+      const outcome = await applyStripePaymentEvent(checkoutEvent(payment, { amountTotal: overpaidAmount }));
+
+      expect(outcome.kind).toBe("flagged");
+      const paid = await PaymentRepository.findById(payment.id);
+      expect(paid?.status).toBe("paid"); // the money did arrive
+      expect(paid?.amountCents).toBe(overpaidAmount);
+      expect(paid?.manualReviewReason).toMatch(/Overpaid/);
+      expect(EmailGateway.sendBalancePaid).not.toHaveBeenCalled();
+    });
+
+    it("flags a balance payment for a booking that is no longer confirmed or completed", async () => {
+      const booking = await createConfirmedBooking();
+      const payment = await startBalanceCheckout(booking);
+      const db = getDb();
+      await db.update(bookings).set({ status: "cancelled", cancelledAt: new Date() }).where(eq(bookings.id, booking.id));
+
+      const outcome = await applyStripePaymentEvent(checkoutEvent(payment, { amountTotal: payment.amountCents }));
+
+      expect(outcome.kind).toBe("flagged");
+      expect((await PaymentRepository.findById(payment.id))?.manualReviewReason).toMatch(/not confirmed or completed/);
+    });
+  });
+
+  describe("getBalanceSummary", () => {
+    it("reflects net paid across every payment type, not just balance payments", async () => {
+      const booking = await createConfirmedBooking();
+      const before = await getBalanceSummary(booking.id);
+      expect(before.remainingBalanceCents).toBe(TOTAL_CENTS - RETAINER_CENTS);
+      expect(before.paidPayment).toBeNull();
+
+      const payment = await startBalanceCheckout(booking);
+      await applyStripePaymentEvent(checkoutEvent(payment, { amountTotal: payment.amountCents }));
+
+      const after = await getBalanceSummary(booking.id);
+      expect(after.remainingBalanceCents).toBe(0);
+      expect(after.overpaidCents).toBe(0);
+      expect(after.paidPayment?.id).toBe(payment.id);
     });
   });
 });

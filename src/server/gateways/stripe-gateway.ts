@@ -20,7 +20,7 @@ const MAX_SESSION_LIFETIME_SECONDS = 24 * 60 * 60;
 export type CheckoutSessionMetadata = {
   paymentId: string;
   bookingId: string;
-  paymentType: "deposit";
+  paymentType: "deposit" | "balance";
 };
 
 export const StripeGateway = {
@@ -29,6 +29,11 @@ export const StripeGateway = {
     const desired = Math.floor(holdExpiresAt.getTime() / 1000);
     const nowSeconds = Math.floor(now.getTime() / 1000);
     return Math.min(Math.max(desired, nowSeconds + MIN_SESSION_LIFETIME_SECONDS + 60), nowSeconds + MAX_SESSION_LIFETIME_SECONDS - 60);
+  },
+
+  /** For payments with no hold to tie expiry to (the remaining balance) — Stripe's maximum allowed lifetime. */
+  standardSessionExpiresAt(now: Date = new Date()): number {
+    return Math.floor(now.getTime() / 1000) + MAX_SESSION_LIFETIME_SECONDS - 60;
   },
 
   async createDepositCheckoutSession(params: {
@@ -72,6 +77,55 @@ export const StripeGateway = {
       },
       // The payment row id is unique per attempt, so a network retry of this call can't create a second session.
       { idempotencyKey: `deposit-checkout-${params.paymentId}` },
+    );
+
+    if (!session.url) {
+      throw new Error("Stripe did not return a Checkout URL.");
+    }
+    return { id: session.id, url: session.url };
+  },
+
+  async createBalanceCheckoutSession(params: {
+    paymentId: string;
+    bookingId: string;
+    referenceCode: string;
+    customerEmail: string;
+    amountCents: number;
+    currency: string;
+    expiresAt: number;
+    successUrl: string;
+    cancelUrl: string;
+  }): Promise<{ id: string; url: string }> {
+    const metadata: CheckoutSessionMetadata = {
+      paymentId: params.paymentId,
+      bookingId: params.bookingId,
+      paymentType: "balance",
+    };
+
+    const session = await getStripe().checkout.sessions.create(
+      {
+        mode: "payment",
+        payment_method_types: ["card"],
+        customer_email: params.customerEmail,
+        client_reference_id: params.referenceCode,
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: params.currency,
+              unit_amount: params.amountCents,
+              product_data: { name: `Memory Studio remaining balance — ${params.referenceCode}` },
+            },
+          },
+        ],
+        metadata,
+        payment_intent_data: { metadata },
+        expires_at: params.expiresAt,
+        success_url: params.successUrl,
+        cancel_url: params.cancelUrl,
+      },
+      // The payment row id is unique per attempt, so a network retry of this call can't create a second session.
+      { idempotencyKey: `balance-checkout-${params.paymentId}` },
     );
 
     if (!session.url) {

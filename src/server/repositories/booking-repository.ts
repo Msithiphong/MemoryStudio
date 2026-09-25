@@ -53,6 +53,12 @@ export const BookingRepository = {
     return booking ?? null;
   },
 
+  /** BR-PAY-012: no default/derived value — an admin sets this per booking, or leaves it null. Never auto-enforced. */
+  async setBalanceDueAt(id: string, dueAt: Date | null, executor: DbExecutor = getDb()): Promise<Booking | null> {
+    const [booking] = await executor.update(bookings).set({ balanceDueAt: dueAt }).where(eq(bookings.id, id)).returning();
+    return booking ?? null;
+  },
+
   /** Atomic and idempotent-safe: returns null (a no-op, not an error) if already locked. */
   async lockCustomization(id: string, executor: DbExecutor = getDb()): Promise<Booking | null> {
     const [booking] = await executor

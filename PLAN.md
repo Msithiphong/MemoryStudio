@@ -437,14 +437,20 @@ Before implementation, finalize:
 balance due date = TBD
 ```
 
+**Resolution:** this remains undecided. Per BUSINESS_RULES.md BR-PAY-012 ("do not hard-code an
+arbitrary due date"), `bookings.balance_due_at` is implemented as an optional, per-booking value
+an admin sets manually (mirroring Phase 8's customization due date) — never a default/derived
+policy, and never auto-enforced (no auto-lock, no automatic reminder schedule). This satisfies the
+gate without blocking on the business decision; revisit once a real policy is chosen.
+
 ## Tasks
 
-- [ ] Calculate net paid amount.
-- [ ] Calculate remaining balance.
-- [ ] Add balance Checkout flow.
-- [ ] Reuse webhook/idempotency architecture.
-- [ ] Show paid/outstanding status in client/admin.
-- [ ] Add reminder emails.
+- [x] Calculate net paid amount.
+- [x] Calculate remaining balance.
+- [x] Add balance Checkout flow.
+- [x] Reuse webhook/idempotency architecture.
+- [x] Show paid/outstanding status in client/admin.
+- [x] Add reminder emails.
 
 ## Acceptance Criteria
 

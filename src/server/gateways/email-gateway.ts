@@ -7,6 +7,8 @@ import { MagicLinkEmail } from "@/lib/email/magic-link";
 import { ContractSignedEmail } from "@/lib/email/contract-signed";
 import { BookingConfirmedEmail } from "@/lib/email/booking-confirmed";
 import { CustomizationReminderEmail } from "@/lib/email/customization-reminder";
+import { BalancePaidEmail } from "@/lib/email/balance-paid";
+import { BalanceReminderEmail } from "@/lib/email/balance-reminder";
 
 function getResendClient(): Resend | null {
   if (!serverEnv.RESEND_API_KEY || !serverEnv.EMAIL_FROM) {
@@ -141,6 +143,52 @@ export const EmailGateway = {
           ? params.dueAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
           : null,
         customizeUrl: `${base}/client/customize`,
+        assetsBaseUrl: serverEnv.APP_URL ?? "",
+      }),
+    });
+  },
+
+  async sendBalancePaid(params: { to: string; firstName: string; referenceCode: string; amountPaid: string }): Promise<void> {
+    const resend = getResendClient();
+    if (!resend) return;
+
+    await resend.emails.send({
+      from: `Memory Studio OC <${serverEnv.EMAIL_FROM}>`,
+      to: params.to,
+      subject: "Your Memory Studio balance is paid in full",
+      react: BalancePaidEmail({
+        firstName: params.firstName,
+        referenceCode: params.referenceCode,
+        amountPaid: params.amountPaid,
+        assetsBaseUrl: serverEnv.APP_URL ?? "",
+      }),
+    });
+  },
+
+  async sendBalanceReminder(params: {
+    to: string;
+    firstName: string;
+    referenceCode: string;
+    amountDue: string;
+    dueAt: Date | null;
+  }): Promise<void> {
+    const resend = getResendClient();
+    if (!resend) return;
+
+    const base = (serverEnv.APP_URL ?? "").replace(/\/$/, "");
+
+    await resend.emails.send({
+      from: `Memory Studio OC <${serverEnv.EMAIL_FROM}>`,
+      to: params.to,
+      subject: "Your Memory Studio balance is due",
+      react: BalanceReminderEmail({
+        firstName: params.firstName,
+        referenceCode: params.referenceCode,
+        amountDue: params.amountDue,
+        dueDateLabel: params.dueAt
+          ? params.dueAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+          : null,
+        paymentUrl: `${base}/client/payment`,
         assetsBaseUrl: serverEnv.APP_URL ?? "",
       }),
     });

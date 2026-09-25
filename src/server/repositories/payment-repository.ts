@@ -46,6 +46,15 @@ export const PaymentRepository = {
     return row?.total ?? 0;
   },
 
+  /** DATABASE.md's `net_paid_cents` — every payment type together, for the remaining-balance calculation. */
+  async sumReceivedCentsForBooking(bookingId: string, executor: DbExecutor = getDb()): Promise<number> {
+    const [row] = await executor
+      .select({ total: sql<number>`coalesce(sum(${payments.amountCents} - ${payments.refundedCents}), 0)::int` })
+      .from(payments)
+      .where(and(eq(payments.bookingId, bookingId), inArray(payments.status, [...RECEIVED_STATUSES])));
+    return row?.total ?? 0;
+  },
+
   async attachCheckoutSession(id: string, checkoutSessionId: string, executor: DbExecutor = getDb()): Promise<Payment | null> {
     const [payment] = await executor
       .update(payments)

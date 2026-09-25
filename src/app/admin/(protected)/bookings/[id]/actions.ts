@@ -2,6 +2,7 @@
 
 import { getCurrentAdmin } from "@/server/auth/get-current-admin";
 import { setMaxPromptsSchema, setCustomizationDueDateSchema } from "@/lib/validation/customization";
+import { setBalanceDueDateSchema } from "@/lib/validation/payment";
 import {
   lockCustomization,
   unlockCustomization,
@@ -9,6 +10,7 @@ import {
   setMaxPrompts,
   sendCustomizationReminder,
 } from "@/server/services/customizations";
+import { setBalanceDueDate, sendBalanceReminder } from "@/server/services/payments";
 
 export type AdminActionResult = { ok: true } | { ok: false; error: string };
 
@@ -84,6 +86,37 @@ export async function sendCustomizationReminderAction(bookingId: string): Promis
 
   try {
     await sendCustomizationReminder(bookingId, actor);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong." };
+  }
+}
+
+export async function setBalanceDueDateAction(bookingId: string, raw: unknown): Promise<AdminActionResult> {
+  const actor = await requireAdmin();
+  if ("error" in actor) return { ok: false, error: actor.error };
+
+  const parsed = setBalanceDueDateSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Enter a valid date." };
+  }
+
+  try {
+    // End-of-day on the chosen date, or clear the due date entirely.
+    const dueAt = parsed.data.dueDate ? new Date(`${parsed.data.dueDate}T23:59:59`) : null;
+    await setBalanceDueDate(bookingId, dueAt, actor);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong." };
+  }
+}
+
+export async function sendBalanceReminderAction(bookingId: string): Promise<AdminActionResult> {
+  const actor = await requireAdmin();
+  if ("error" in actor) return { ok: false, error: actor.error };
+
+  try {
+    await sendBalanceReminder(bookingId, actor);
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Something went wrong." };

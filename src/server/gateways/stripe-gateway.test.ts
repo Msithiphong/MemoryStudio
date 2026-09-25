@@ -53,3 +53,13 @@ describe("StripeGateway.sessionExpiresAt", () => {
     expect(StripeGateway.sessionExpiresAt(hold, now)).toBeGreaterThan(nowSeconds + 30 * 60);
   });
 });
+
+describe("StripeGateway.standardSessionExpiresAt", () => {
+  it("is just under Stripe's 24-hour maximum from now", () => {
+    const now = new Date("2030-01-01T00:00:00Z");
+    const nowSeconds = Math.floor(now.getTime() / 1000);
+    const result = StripeGateway.standardSessionExpiresAt(now);
+    expect(result).toBeLessThan(nowSeconds + 24 * 60 * 60);
+    expect(result).toBeGreaterThan(nowSeconds + 23 * 60 * 60);
+  });
+});

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateRemainingBalanceCents, calculateRetainerCents, calculateRetainerDueCents, formatMoney } from "./money";
+import {
+  calculateOverpaidCents,
+  calculateRemainingBalanceCents,
+  calculateRetainerCents,
+  calculateRetainerDueCents,
+  formatMoney,
+} from "./money";
 
 describe("calculateRetainerCents", () => {
   it("is 30% of the total", () => {
@@ -61,5 +67,16 @@ describe("formatMoney", () => {
       const retainer = calculateRetainerCents(total);
       expect(Math.round(parseFloat(formatMoney(retainer).replace(/[$,]/g, "")) * 100)).toBe(retainer);
     }
+  });
+});
+
+describe("calculateOverpaidCents", () => {
+  it("is zero when net paid does not exceed the total", () => {
+    expect(calculateOverpaidCents(69_900, 69_900)).toBe(0);
+    expect(calculateOverpaidCents(50_000, 69_900)).toBe(0);
+  });
+
+  it("is the excess when net paid exceeds the total", () => {
+    expect(calculateOverpaidCents(70_000, 69_900)).toBe(100);
   });
 });

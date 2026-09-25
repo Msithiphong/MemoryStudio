@@ -1,6 +1,12 @@
 import type Stripe from "stripe";
 
-import { calculateRemainingBalanceCents, calculateRetainerCents, calculateRetainerDueCents, formatMoney } from "@/lib/money";
+import {
+  calculateOverpaidCents,
+  calculateRemainingBalanceCents,
+  calculateRetainerCents,
+  calculateRetainerDueCents,
+  formatMoney,
+} from "@/lib/money";
 import { getDb, type DbExecutor } from "@/lib/db";
 import { serverEnv } from "@/lib/env";
 import { checkoutSessionMetadataSchema } from "@/lib/validation/payment";
@@ -22,6 +28,7 @@ const STALE_PENDING_MS = 2 * 60 * 1000;
 export type PaymentNotAllowedCode =
   | "booking_not_on_hold"
   | "hold_expired"
+  | "booking_not_confirmed"
   | "contract_unsigned"
   | "contract_out_of_date"
   | "already_paid"
@@ -88,6 +95,50 @@ export async function evaluateDepositEligibility(bookingId: string, now: Date = 
   }
 
   return { ok: true, booking, dueCents, holdExpiresAt: reservation.holdExpiresAt };
+}
+
+export type BalanceEligibility =
+  | { ok: true; booking: Booking; dueCents: number }
+  | { ok: false; code: PaymentNotAllowedCode; message: string };
+
+/**
+ * Balance payments only make sense once the retainer has confirmed the booking. A "completed"
+ * booking may still have an outstanding balance (DATABASE.md: payment/fulfillment state stay
+ * separate), so both statuses are eligible; nothing earlier in the workflow is.
+ */
+export async function evaluateBalanceEligibility(bookingId: string): Promise<BalanceEligibility> {
+  const booking = await BookingRepository.findById(bookingId);
+  if (!booking) throw new Error("Booking not found.");
+
+  if (booking.status !== "confirmed" && booking.status !== "completed") {
+    return { ok: false, code: "booking_not_confirmed", message: "This booking does not have a balance due yet." };
+  }
+
+  const contract = await ContractRepository.findCurrentByBookingId(booking.id);
+  if (!contract || contract.status !== "signed") {
+    return { ok: false, code: "contract_unsigned", message: "Please sign your current contract before paying the balance." };
+  }
+  if (contract.bookingTotalCents !== booking.totalCents) {
+    return {
+      ok: false,
+      code: "contract_out_of_date",
+      message: "Your booking changed after the contract was prepared. We'll send an updated contract to sign.",
+    };
+  }
+
+  const lineItems = await BookingLineItemRepository.listForBooking(booking.id);
+  const totalCents = lineItems.reduce((sum, item) => sum + item.lineTotalCents, 0);
+  if (totalCents !== booking.totalCents) {
+    throw new Error(`Booking ${booking.referenceCode} total does not match its line items.`);
+  }
+
+  const netPaidCents = await PaymentRepository.sumReceivedCentsForBooking(booking.id);
+  const dueCents = calculateRemainingBalanceCents(totalCents, netPaidCents);
+  if (dueCents <= 0) {
+    return { ok: false, code: "already_paid", message: "Your balance has already been paid in full." };
+  }
+
+  return { ok: true, booking, dueCents };
 }
 
 /** Returns the URL of an existing still-usable Checkout Session for this attempt, or null after closing an unusable one. */
@@ -171,11 +222,72 @@ export async function createDepositCheckoutSession(bookingId: string): Promise<{
   return { url: session.url };
 }
 
+export async function createBalanceCheckoutSession(bookingId: string): Promise<{ url: string }> {
+  const eligibility = await evaluateBalanceEligibility(bookingId);
+  if (!eligibility.ok) {
+    throw new PaymentNotAllowedError(eligibility.code, eligibility.message);
+  }
+  const { booking, dueCents } = eligibility;
+
+  const existing = await PaymentRepository.findPending(booking.id, "balance");
+  if (existing) {
+    const reusableUrl = await reuseOrCloseExistingAttempt(existing, dueCents);
+    if (reusableUrl) return { url: reusableUrl };
+  }
+
+  let payment: Payment;
+  try {
+    payment = await PaymentRepository.create({
+      bookingId: booking.id,
+      paymentType: "balance",
+      status: "pending",
+      amountCents: dueCents,
+      currency: booking.currency,
+    });
+  } catch (error) {
+    if (isUniqueViolation(error, "payments_one_pending_per_booking_type")) {
+      throw new PaymentNotAllowedError("checkout_in_progress", "Your payment page is being prepared. Please try again in a moment.");
+    }
+    throw error;
+  }
+
+  const base = (serverEnv.APP_URL ?? "").replace(/\/$/, "");
+  let session: { id: string; url: string };
+  try {
+    session = await StripeGateway.createBalanceCheckoutSession({
+      paymentId: payment.id,
+      bookingId: booking.id,
+      referenceCode: booking.referenceCode,
+      customerEmail: booking.email,
+      amountCents: dueCents,
+      currency: booking.currency,
+      expiresAt: StripeGateway.standardSessionExpiresAt(),
+      successUrl: `${base}/client/payment?status=success`,
+      cancelUrl: `${base}/client/payment?status=cancelled`,
+    });
+  } catch (error) {
+    await PaymentRepository.closePending(payment.id, "failed");
+    throw error;
+  }
+
+  await PaymentRepository.attachCheckoutSession(payment.id, session.id);
+  await AuditRepository.record({
+    actorType: "client",
+    actorId: booking.id,
+    bookingId: booking.id,
+    action: "payment.checkout_created",
+    metadataJson: { paymentId: payment.id, paymentType: "balance", amountCents: dueCents },
+  });
+
+  return { url: session.url };
+}
+
 export type StripeEventOutcome =
   | { kind: "duplicate" }
   | { kind: "ignored" }
   | { kind: "recorded" }
   | { kind: "confirmed"; booking: Booking; payment: Payment }
+  | { kind: "balance_paid"; booking: Booking; payment: Payment }
   | { kind: "flagged"; bookingId: string; reason: string };
 
 /**
@@ -209,6 +321,13 @@ export async function applyStripePaymentEvent(event: Stripe.Event): Promise<Stri
       await sendBookingConfirmedEmail(outcome.booking, outcome.payment);
     } catch (error) {
       console.error("[applyStripePaymentEvent] Failed to send booking-confirmed email:", error);
+    }
+  }
+  if (outcome.kind === "balance_paid") {
+    try {
+      await sendBalancePaidEmail(outcome.booking, outcome.payment);
+    } catch (error) {
+      console.error("[applyStripePaymentEvent] Failed to send balance-paid email:", error);
     }
   }
   if (outcome.kind === "flagged") {
@@ -298,6 +417,20 @@ async function applyCheckoutPaid(event: Stripe.Event, session: Stripe.Checkout.S
     return { kind: "flagged", bookingId: payment.bookingId, reason };
   }
 
+  if (paid.paymentType === "balance") {
+    return finalizeBalancePayment(event, paid, booking, problems, tx);
+  }
+  return finalizeDepositPayment(event, paid, booking, problems, paidAt, tx);
+}
+
+async function finalizeDepositPayment(
+  event: Stripe.Event,
+  paid: Payment,
+  booking: Booking,
+  problems: string[],
+  paidAt: Date,
+  tx: DbExecutor,
+): Promise<StripeEventOutcome> {
   const reservation = booking.status === "hold" ? await DateReservationRepository.findByBookingIdForUpdate(booking.id, tx) : null;
 
   if (booking.status !== "hold") {
@@ -322,14 +455,14 @@ async function applyCheckoutPaid(event: Stripe.Event, session: Stripe.Checkout.S
 
   if (problems.length > 0 || !reservation) {
     const reason = problems.join(" ") || "The date reservation could not be confirmed.";
-    await PaymentRepository.setManualReviewReason(payment.id, reason, tx);
+    await PaymentRepository.setManualReviewReason(paid.id, reason, tx);
     await AuditRepository.record(
       {
         actorType: "system",
         actorId: "stripe-webhook",
         bookingId: booking.id,
         action: "payment.flagged_for_manual_review",
-        metadataJson: { paymentId: payment.id, stripeEventId: event.id, reason },
+        metadataJson: { paymentId: paid.id, stripeEventId: event.id, reason },
       },
       tx,
     );
@@ -349,12 +482,65 @@ async function applyCheckoutPaid(event: Stripe.Event, session: Stripe.Checkout.S
       actorId: "stripe-webhook",
       bookingId: booking.id,
       action: "booking.confirmed",
-      metadataJson: { paymentId: payment.id, stripeEventId: event.id, amountCents: receivedCents },
+      metadataJson: { paymentId: paid.id, stripeEventId: event.id, amountCents: paid.amountCents },
     },
     tx,
   );
 
   return { kind: "confirmed", booking: confirmed, payment: paid };
+}
+
+/**
+ * Unlike the deposit, a paid balance never changes booking.status — payment state and
+ * fulfillment state stay separate (DATABASE.md). BR-PAY-008/overpayment: money that arrived
+ * but can't be safely applied (booking no longer confirmed/completed, or it overpays the
+ * total) is flagged for admin review rather than silently accepted or auto-refunded.
+ */
+async function finalizeBalancePayment(
+  event: Stripe.Event,
+  paid: Payment,
+  booking: Booking,
+  problems: string[],
+  tx: DbExecutor,
+): Promise<StripeEventOutcome> {
+  if (booking.status !== "confirmed" && booking.status !== "completed") {
+    problems.push(`Booking is ${booking.status}, not confirmed or completed.`);
+  }
+
+  const netPaidCents = await PaymentRepository.sumReceivedCentsForBooking(booking.id, tx);
+  const overpaidCents = calculateOverpaidCents(netPaidCents, booking.totalCents);
+  if (overpaidCents > 0) {
+    problems.push(`Overpaid by ${overpaidCents} cents (net paid ${netPaidCents} of ${booking.totalCents} total).`);
+  }
+
+  if (problems.length > 0) {
+    const reason = problems.join(" ");
+    await PaymentRepository.setManualReviewReason(paid.id, reason, tx);
+    await AuditRepository.record(
+      {
+        actorType: "system",
+        actorId: "stripe-webhook",
+        bookingId: booking.id,
+        action: "payment.flagged_for_manual_review",
+        metadataJson: { paymentId: paid.id, stripeEventId: event.id, reason },
+      },
+      tx,
+    );
+    return { kind: "flagged", bookingId: booking.id, reason };
+  }
+
+  await AuditRepository.record(
+    {
+      actorType: "system",
+      actorId: "stripe-webhook",
+      bookingId: booking.id,
+      action: "payment.balance_paid",
+      metadataJson: { paymentId: paid.id, stripeEventId: event.id, amountCents: paid.amountCents },
+    },
+    tx,
+  );
+
+  return { kind: "balance_paid", booking, payment: paid };
 }
 
 async function sendBookingConfirmedEmail(booking: Booking, payment: Payment): Promise<void> {
@@ -365,6 +551,15 @@ async function sendBookingConfirmedEmail(booking: Booking, payment: Payment): Pr
     eventDate: booking.eventDate,
     amountPaid: formatMoney(payment.amountCents),
     remainingBalance: formatMoney(calculateRemainingBalanceCents(booking.totalCents, payment.amountCents)),
+  });
+}
+
+async function sendBalancePaidEmail(booking: Booking, payment: Payment): Promise<void> {
+  await EmailGateway.sendBalancePaid({
+    to: booking.email,
+    firstName: booking.primaryContactName.split(" ")[0] ?? booking.primaryContactName,
+    referenceCode: booking.referenceCode,
+    amountPaid: formatMoney(payment.amountCents),
   });
 }
 
@@ -381,4 +576,69 @@ export async function getDepositSummary(bookingId: string): Promise<DepositSumma
     paidPayment: deposits.find((p) => p.status === "paid" || p.status === "partially_refunded") ?? null,
     flaggedPayment: deposits.find((p) => p.manualReviewReason !== null) ?? null,
   };
+}
+
+export type BalanceSummary = {
+  paidPayment: Payment | null;
+  flaggedPayment: Payment | null;
+  netPaidCents: number;
+  remainingBalanceCents: number;
+  overpaidCents: number;
+};
+
+/** Read-only view for the client payment page and admin booking page. */
+export async function getBalanceSummary(bookingId: string): Promise<BalanceSummary> {
+  const booking = await BookingRepository.findById(bookingId);
+  if (!booking) throw new Error("Booking not found.");
+
+  const payments = await PaymentRepository.listForBooking(bookingId);
+  const balancePayments = payments.filter((p) => p.paymentType === "balance");
+  const netPaidCents = await PaymentRepository.sumReceivedCentsForBooking(bookingId);
+
+  return {
+    paidPayment: balancePayments.find((p) => p.status === "paid" || p.status === "partially_refunded") ?? null,
+    flaggedPayment: payments.find((p) => p.manualReviewReason !== null) ?? null,
+    netPaidCents,
+    remainingBalanceCents: calculateRemainingBalanceCents(booking.totalCents, netPaidCents),
+    overpaidCents: calculateOverpaidCents(netPaidCents, booking.totalCents),
+  };
+}
+
+/** BR-PAY-012: no default/derived value — an admin sets this per booking, or leaves it null. */
+export async function setBalanceDueDate(bookingId: string, dueAt: Date | null, actor: { id: string; displayName: string }): Promise<Booking> {
+  const booking = await BookingRepository.setBalanceDueAt(bookingId, dueAt);
+  if (!booking) throw new Error("Booking not found.");
+
+  await AuditRepository.record({
+    actorType: "admin",
+    actorId: actor.id,
+    actorDisplayName: actor.displayName,
+    bookingId,
+    action: "payment.balance_due_date_set",
+    metadataJson: { dueAt: dueAt?.toISOString() ?? null },
+  });
+  return booking;
+}
+
+export async function sendBalanceReminder(bookingId: string, actor: { id: string; displayName: string }): Promise<void> {
+  const booking = await BookingRepository.findById(bookingId);
+  if (!booking) throw new Error("Booking not found.");
+
+  const summary = await getBalanceSummary(bookingId);
+
+  await EmailGateway.sendBalanceReminder({
+    to: booking.email,
+    firstName: booking.primaryContactName.split(" ")[0] ?? booking.primaryContactName,
+    referenceCode: booking.referenceCode,
+    amountDue: formatMoney(summary.remainingBalanceCents),
+    dueAt: booking.balanceDueAt,
+  });
+
+  await AuditRepository.record({
+    actorType: "admin",
+    actorId: actor.id,
+    actorDisplayName: actor.displayName,
+    bookingId,
+    action: "payment.balance_reminder_sent",
+  });
 }

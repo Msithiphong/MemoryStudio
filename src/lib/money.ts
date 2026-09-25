@@ -15,6 +15,11 @@ export function calculateRemainingBalanceCents(totalCents: number, paidCents: nu
   return Math.max(0, totalCents - paidCents);
 }
 
+/** DATABASE.md "Remaining Balance / Amount Due": how much net-paid exceeds the total; never negative. Flag for admin review — never auto-refund. */
+export function calculateOverpaidCents(netPaidCents: number, totalCents: number): number {
+  return Math.max(0, netPaidCents - totalCents);
+}
+
 /** Exact display of an integer-cents amount: "$209.70", or "$699" when there are no cents. Use this (not the marketing `formatPrice`, which rounds to whole dollars) anywhere a retainer, payment, or booking total is shown. */
 export function formatMoney(cents: number): string {
   const hasCents = cents % 100 !== 0;
