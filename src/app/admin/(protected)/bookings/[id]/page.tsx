@@ -4,11 +4,13 @@ import { getBooking } from "@/server/services/bookings";
 import { PaymentRepository } from "@/server/repositories/payment-repository";
 import { getOrCreateCurrentContract, NoActiveContractTemplateError } from "@/server/services/contracts";
 import { getOrCreateCustomizationView } from "@/server/services/customizations";
+import { listMediaForBooking } from "@/server/services/media";
 import { calculateRemainingBalanceCents, formatMoney } from "@/lib/money";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CustomizationAdminPanel } from "./customization-admin-panel";
 import { BalanceAdminPanel } from "./balance-admin-panel";
+import { MediaAdminPanel } from "./media-admin-panel";
 import type { BookingStatus, Contract } from "@/lib/db/schema";
 
 const STATUS_VARIANTS: Record<BookingStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -54,6 +56,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   const remainingBalanceCents = calculateRemainingBalanceCents(booking.totalCents, netPaidCents);
 
   const { customization, prompts, locked, signageApplicable } = await getOrCreateCustomizationView(booking.id);
+  const mediaAssets = await listMediaForBooking(booking.id);
 
   return (
     <div>
@@ -232,6 +235,11 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           dueDate={booking.customizationDueAt ? new Date(booking.customizationDueAt).toISOString().slice(0, 10) : ""}
           maxPrompts={customization.maxPrompts}
         />
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold">Media</h2>
+        <MediaAdminPanel bookingId={booking.id} mediaAssets={mediaAssets} />
       </div>
     </div>
   );

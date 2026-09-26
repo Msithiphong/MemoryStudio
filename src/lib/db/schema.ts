@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   date,
@@ -581,3 +582,74 @@ export const bookingPrompts = pgTable(
 
 export type BookingPrompt = typeof bookingPrompts.$inferSelect;
 export type NewBookingPrompt = typeof bookingPrompts.$inferInsert;
+
+export const mediaTypeEnum = pgEnum("media_type", ["original", "web", "highlight", "delivery_archive", "other"]);
+export const mediaStorageStatusEnum = pgEnum("media_storage_status", ["pending", "uploaded", "failed", "deleted"]);
+
+export const mediaAssets = pgTable(
+  "media_assets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id),
+    // Links a derived file (e.g. web MP4) to the original recording it came from.
+    // Provenance only — deleting a source does not cascade to its derived assets or vice versa.
+    sourceMediaAssetId: uuid("source_media_asset_id"),
+
+    mediaType: mediaTypeEnum("media_type").notNull(),
+    storageStatus: mediaStorageStatusEnum("storage_status").notNull().default("pending"),
+
+    r2ObjectKey: text("r2_object_key").notNull().unique(),
+    originalFilename: text("original_filename").notNull(),
+    displayName: text("display_name"),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
+    durationSeconds: integer("duration_seconds"),
+
+    isVisible: boolean("is_visible").notNull().default(false),
+    isDownloadable: boolean("is_downloadable").notNull().default(false),
+
+    retentionExpiresAt: timestamp("retention_expires_at", { withTimezone: true }),
+    storageDeletedAt: timestamp("storage_deleted_at", { withTimezone: true }),
+
+    sortOrder: integer("sort_order").notNull().default(0),
+
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => sql`now()`),
+  },
+  (table) => [
+    // Lets the self-referencing FK below require a derived asset's source to belong to the same booking.
+    unique("media_assets_id_booking_id_unique").on(table.id, table.bookingId),
+    foreignKey({
+      columns: [table.sourceMediaAssetId, table.bookingId],
+      foreignColumns: [table.id, table.bookingId],
+      name: "media_assets_source_same_booking_fk",
+    }),
+
+    index("media_assets_booking_visible_sort_idx").on(table.bookingId, table.isVisible, table.sortOrder),
+    index("media_assets_booking_media_type_idx").on(table.bookingId, table.mediaType),
+    index("media_assets_booking_storage_status_idx").on(table.bookingId, table.storageStatus),
+    index("media_assets_retention_expires_at_idx").on(table.retentionExpiresAt),
+    index("media_assets_source_media_asset_id_idx").on(table.sourceMediaAssetId),
+
+    check("media_assets_size_bytes_nonnegative", sql`${table.sizeBytes} >= 0`),
+    check("media_assets_duration_seconds_nonnegative", sql`${table.durationSeconds} IS NULL OR ${table.durationSeconds} >= 0`),
+    check("media_assets_sort_order_nonnegative", sql`${table.sortOrder} >= 0`),
+    check("media_assets_r2_object_key_nonempty", sql`trim(${table.r2ObjectKey}) <> ''`),
+    check("media_assets_source_not_self", sql`${table.sourceMediaAssetId} IS NULL OR ${table.sourceMediaAssetId} <> ${table.id}`),
+    check("media_assets_uploaded_requires_uploaded_at", sql`${table.storageStatus} <> 'uploaded' OR ${table.uploadedAt} IS NOT NULL`),
+    check("media_assets_deleted_requires_deleted_at", sql`${table.storageStatus} <> 'deleted' OR ${table.storageDeletedAt} IS NOT NULL`),
+    check("media_assets_non_deleted_has_no_deleted_at", sql`${table.storageStatus} = 'deleted' OR ${table.storageDeletedAt} IS NULL`),
+    check("media_assets_visible_requires_uploaded", sql`${table.isVisible} = false OR ${table.storageStatus} = 'uploaded'`),
+  ],
+);
+
+export type MediaAsset = typeof mediaAssets.$inferSelect;
+export type NewMediaAsset = typeof mediaAssets.$inferInsert;
+export type MediaType = (typeof mediaTypeEnum.enumValues)[number];
+export type MediaStorageStatus = (typeof mediaStorageStatusEnum.enumValues)[number];

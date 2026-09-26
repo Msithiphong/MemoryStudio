@@ -481,14 +481,14 @@ media_assets
 
 ## Tasks
 
-- [ ] Configure R2.
-- [ ] Create server-side object-key helper.
-- [ ] Create admin upload authorization endpoint/action.
-- [ ] Generate short-lived presigned PUT URLs.
-- [ ] Upload directly browser -> R2.
-- [ ] Persist metadata after successful upload.
-- [ ] Support upload retry/recovery.
-- [ ] Keep new assets hidden by default.
+- [x] Configure R2.
+- [x] Create server-side object-key helper.
+- [x] Create admin upload authorization endpoint/action.
+- [x] Generate short-lived presigned PUT URLs.
+- [x] Upload directly browser -> R2.
+- [x] Persist metadata after successful upload.
+- [x] Support upload retry/recovery.
+- [x] Keep new assets hidden by default.
 
 ## Acceptance Criteria
 
