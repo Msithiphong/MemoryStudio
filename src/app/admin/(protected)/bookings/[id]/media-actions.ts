@@ -2,7 +2,7 @@
 
 import { getCurrentAdmin } from "@/server/auth/get-current-admin";
 import { createMediaUploadUrlSchema } from "@/lib/validation/media";
-import { createMediaUploadUrl, retryMediaUpload, confirmMediaUpload } from "@/server/services/media";
+import { createMediaUploadUrl, retryMediaUpload, confirmMediaUpload, deleteMediaAsset } from "@/server/services/media";
 
 async function requireAdmin(): Promise<{ id: string; displayName: string } | { error: string }> {
   const current = await getCurrentAdmin();
@@ -51,6 +51,20 @@ export async function confirmMediaUploadAction(mediaAssetId: string): Promise<Co
 
   try {
     await confirmMediaUpload(mediaAssetId, actor);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Something went wrong." };
+  }
+}
+
+export type DeleteMediaAssetResult = { ok: true } | { ok: false; error: string };
+
+export async function deleteMediaAssetAction(mediaAssetId: string): Promise<DeleteMediaAssetResult> {
+  const actor = await requireAdmin();
+  if ("error" in actor) return { ok: false, error: actor.error };
+
+  try {
+    await deleteMediaAsset(mediaAssetId, actor);
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Something went wrong." };

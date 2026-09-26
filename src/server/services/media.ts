@@ -139,6 +139,33 @@ export async function confirmMediaUpload(mediaAssetId: string, actor: Actor): Pr
   return updated;
 }
 
+/**
+ * Deletes the R2 object but preserves the media_assets row (marked `deleted`) for history,
+ * per DATABASE.md 3.14's application-controlled deletion workflow. Covers the "wrong file
+ * uploaded" case — idempotent if the asset is already deleted.
+ */
+export async function deleteMediaAsset(mediaAssetId: string, actor: Actor): Promise<MediaAsset> {
+  const asset = await MediaRepository.findById(mediaAssetId);
+  if (!asset) throw new MediaNotFoundError();
+  if (asset.storageStatus === "deleted") return asset; // idempotent no-op
+
+  await R2Gateway.deleteObject(asset.r2ObjectKey);
+
+  const updated = await MediaRepository.markDeleted(mediaAssetId);
+  if (!updated) throw new MediaNotFoundError();
+
+  await AuditRepository.record({
+    actorType: "admin",
+    actorId: actor.id,
+    actorDisplayName: actor.displayName,
+    bookingId: asset.bookingId,
+    action: "media.deleted",
+    metadataJson: { mediaAssetId, originalFilename: asset.originalFilename },
+  });
+
+  return updated;
+}
+
 export async function listMediaForBooking(bookingId: string): Promise<MediaAsset[]> {
   const booking = await BookingRepository.findById(bookingId);
   if (!booking) throw new BookingNotFoundError();

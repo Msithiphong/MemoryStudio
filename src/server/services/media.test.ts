@@ -14,13 +14,14 @@ import {
   MediaUploadNotFoundInStorageError,
   confirmMediaUpload,
   createMediaUploadUrl,
+  deleteMediaAsset,
   listMediaForBooking,
   retryMediaUpload,
 } from "./media";
 import type { Booking } from "@/lib/db/schema";
 
 vi.mock("@/server/gateways/r2-gateway", () => ({
-  R2Gateway: { createUploadUrl: vi.fn(), headObject: vi.fn() },
+  R2Gateway: { createUploadUrl: vi.fn(), headObject: vi.fn(), deleteObject: vi.fn() },
 }));
 import { R2Gateway } from "@/server/gateways/r2-gateway";
 
@@ -206,6 +207,53 @@ describe.skipIf(!hasDb)("media service", () => {
       await confirmMediaUpload(mediaAsset.id, testActor);
 
       await expect(retryMediaUpload(mediaAsset.id, testActor)).rejects.toThrow(MediaAlreadyUploadedError);
+    });
+  });
+
+  describe("deleteMediaAsset", () => {
+    it("deletes the R2 object and marks the row deleted while preserving it for history", async () => {
+      const booking = await createBooking();
+      vi.mocked(R2Gateway.createUploadUrl).mockResolvedValue("https://r2.example.com/presigned-put");
+      const { mediaAsset } = await createMediaUploadUrl(
+        booking.id,
+        { originalFilename: "wrong-video.mov", mimeType: "video/quicktime", sizeBytes: 100, mediaType: "original" },
+        testActor,
+      );
+      vi.mocked(R2Gateway.headObject).mockResolvedValue({ sizeBytes: 100, contentType: "video/quicktime" });
+      await confirmMediaUpload(mediaAsset.id, testActor);
+      vi.mocked(R2Gateway.deleteObject).mockResolvedValue(undefined);
+
+      const deleted = await deleteMediaAsset(mediaAsset.id, testActor);
+
+      expect(R2Gateway.deleteObject).toHaveBeenCalledWith(mediaAsset.r2ObjectKey);
+      expect(deleted.storageStatus).toBe("deleted");
+      expect(deleted.storageDeletedAt).not.toBeNull();
+      expect(deleted.isVisible).toBe(false);
+
+      const stillThere = await MediaRepository.findById(mediaAsset.id);
+      expect(stillThere).not.toBeNull(); // metadata row preserved, not hard-deleted
+    });
+
+    it("is idempotent — deleting an already-deleted asset does not call R2 again", async () => {
+      const booking = await createBooking();
+      vi.mocked(R2Gateway.createUploadUrl).mockResolvedValue("https://r2.example.com/presigned-put");
+      const { mediaAsset } = await createMediaUploadUrl(
+        booking.id,
+        { originalFilename: "a.mov", mimeType: "video/quicktime", sizeBytes: 100, mediaType: "original" },
+        testActor,
+      );
+      vi.mocked(R2Gateway.deleteObject).mockResolvedValue(undefined);
+      await deleteMediaAsset(mediaAsset.id, testActor);
+      vi.mocked(R2Gateway.deleteObject).mockClear();
+
+      const secondDelete = await deleteMediaAsset(mediaAsset.id, testActor);
+
+      expect(secondDelete.storageStatus).toBe("deleted");
+      expect(R2Gateway.deleteObject).not.toHaveBeenCalled();
+    });
+
+    it("throws MediaNotFoundError for an unknown media asset id", async () => {
+      await expect(deleteMediaAsset("00000000-0000-0000-0000-000000000000", testActor)).rejects.toThrow(MediaNotFoundError);
     });
   });
 

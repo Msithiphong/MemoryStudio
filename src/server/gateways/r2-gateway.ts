@@ -1,4 +1,4 @@
-import { HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { serverEnv } from "@/lib/env";
@@ -51,5 +51,10 @@ export const R2Gateway = {
       if (statusCode === 404) return null;
       throw error;
     }
+  },
+
+  /** DeleteObject on a key that never existed (e.g. an upload that was never attempted) is idempotent — no error. */
+  async deleteObject(key: string): Promise<void> {
+    await getClient().send(new DeleteObjectCommand({ Bucket: getBucket(), Key: key }));
   },
 };

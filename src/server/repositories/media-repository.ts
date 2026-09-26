@@ -41,4 +41,14 @@ export const MediaRepository = {
     const [asset] = await executor.update(mediaAssets).set({ storageStatus: "pending" }).where(eq(mediaAssets.id, id)).returning();
     return asset ?? null;
   },
+
+  /** Preserves the metadata row for history (DATABASE.md 3.14) — never hard-deletes a media_assets record. */
+  async markDeleted(id: string, executor: DbExecutor = getDb()): Promise<MediaAsset | null> {
+    const [asset] = await executor
+      .update(mediaAssets)
+      .set({ storageStatus: "deleted", storageDeletedAt: new Date(), isVisible: false, isDownloadable: false })
+      .where(eq(mediaAssets.id, id))
+      .returning();
+    return asset ?? null;
+  },
 };

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { createMediaUploadUrlAction, retryMediaUploadAction, confirmMediaUploadAction } from "./media-actions";
+import { createMediaUploadUrlAction, retryMediaUploadAction, confirmMediaUploadAction, deleteMediaAssetAction } from "./media-actions";
 import type { MediaAsset, MediaType, MediaStorageStatus } from "@/lib/db/schema";
 
 const MEDIA_TYPE_OPTIONS: { value: MediaType; label: string }[] = [
@@ -69,6 +69,8 @@ export function MediaAdminPanel({ bookingId, mediaAssets }: MediaAdminPanelProps
   const [uploadingLabel, setUploadingLabel] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [retryTargetId, setRetryTargetId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   async function handleUpload(file: File) {
     setError(null);
@@ -100,6 +102,19 @@ export function MediaAdminPanel({ bookingId, mediaAssets }: MediaAdminPanelProps
     } finally {
       setUploadingLabel(null);
     }
+  }
+
+  async function handleConfirmedDelete(assetId: string) {
+    setError(null);
+    setDeletingId(assetId);
+    setConfirmingDeleteId(null);
+    const result = await deleteMediaAssetAction(assetId);
+    setDeletingId(null);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    router.refresh();
   }
 
   async function handleRetry(assetId: string, file: File) {
@@ -157,20 +172,56 @@ export function MediaAdminPanel({ bookingId, mediaAssets }: MediaAdminPanelProps
                     {asset.uploadedAt ? new Date(asset.uploadedAt).toLocaleString() : "—"}
                   </TableCell>
                   <TableCell>
-                    {asset.storageStatus === "pending" || asset.storageStatus === "failed" ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={uploadingLabel !== null}
-                        onClick={() => {
-                          setRetryTargetId(asset.id);
-                          retryInputRef.current?.click();
-                        }}
-                      >
-                        Retry upload
-                      </Button>
-                    ) : null}
+                    <div className="flex gap-2">
+                      {asset.storageStatus === "pending" || asset.storageStatus === "failed" ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={uploadingLabel !== null || deletingId !== null}
+                          onClick={() => {
+                            setRetryTargetId(asset.id);
+                            retryInputRef.current?.click();
+                          }}
+                        >
+                          Retry upload
+                        </Button>
+                      ) : null}
+                      {asset.storageStatus !== "deleted" ? (
+                        confirmingDeleteId === asset.id ? (
+                          <>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              disabled={deletingId !== null}
+                              onClick={() => handleConfirmedDelete(asset.id)}
+                            >
+                              {deletingId === asset.id ? "Deleting…" : "Confirm delete"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={deletingId !== null}
+                              onClick={() => setConfirmingDeleteId(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={uploadingLabel !== null || deletingId !== null}
+                            onClick={() => setConfirmingDeleteId(asset.id)}
+                          >
+                            Delete
+                          </Button>
+                        )
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
