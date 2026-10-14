@@ -1,6 +1,6 @@
 # Memory Studio
 
-**🌐 Website: [memorystudiosoc.com](https://memorystudiooc.com)**
+**🌐 Website: [memorystudiooc.com](https://memorystudiooc.com)**
 
 Memory Studio is a premium wedding video/audio guest book service. This repository is the source for its website and booking platform: a public marketing site, a manually-reviewed inquiry flow, and a private portal that carries a couple from first inquiry through contract, payment, customization, and final video delivery.
 
